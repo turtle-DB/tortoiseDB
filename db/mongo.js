@@ -6,31 +6,25 @@ const storeName = 'store';
 const express = require('express');
 const app = express();
 
-function TortoiseDB() {
-  function connect() {
+class TortoiseDB {
+  connect() {
     return MongoClient.connect(url)
-      .then(function(client) {
+      .then(client => {
         this._client = client;
         return this._client.db(dbName);
       });
   }
 
-  function insertDoc(doc) {
-    return this.connect().then(function(db) {
+  insertDoc(doc) {
+    return this.connect().then(db => {
       db.collection(storeName).insertOne(doc)
-      .then(function(res) {
-        console.log("Successfully inserted card"));
-      }
-      .catch(function(err) {
-        console.log("Insert error:", err));
-      }
-      .finally(function() {
-        this._client.close())
-      }
+      .then(() => console.log("Successfully inserted card"))
+      .catch(err => console.log("Insert error:", err))
+      .finally(() => this._client.close());
     })
   }
 }
 
 const tortoiseDB = new TortoiseDB();
 
-tortiseDB.insertDoc({name: 'Chris'});
+tortoiseDB.insertDoc({name: 'Chris'});
