@@ -16,9 +16,7 @@ app.route('/store')
 
   })
   .post((req, res) => {
-    console.log(req.body);
-    console.log(tortoiseDB);
-    tortoiseDB.insertDoc(req);
+    tortoiseDB.insertDoc(req.body);
     res.send('hobbits');
   })
   .put((req, res) => {
