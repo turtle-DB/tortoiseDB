@@ -14,11 +14,11 @@ class TortoiseDB {
         return this._client.db(dbName);
       });
   }
-  //db.collection(...).insertOne(...).then(...).catch(...).finally is not a function
+
   insertDoc(doc) {
     return this.connect().then(db => {
       db.collection(storeName).insertOne(doc)
-      .then(() => console.log("Successfully inserted card"))
+      .then(() => console.log("Successfully inserted document"))
       .catch(err => console.log("Insert error:", err))
       .finally(() => this._client.close());
     })
@@ -27,4 +27,4 @@ class TortoiseDB {
 
 const tortoiseDB = new TortoiseDB();
 
-tortoiseDB.insertDoc({name: 'Chris'});
+module.exports = { tortoiseDB };

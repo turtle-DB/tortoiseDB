@@ -1,4 +1,5 @@
 const express = require('express');
+const tortoiseDB = require('../db/mongo').tortoiseDB;
 
 const app = express();
 app.use(express.json());
@@ -15,7 +16,10 @@ app.route('/store')
 
   })
   .post((req, res) => {
-    
+    console.log(req.body);
+    console.log(tortoiseDB);
+    tortoiseDB.insertDoc(req);
+    res.send('hobbits');
   })
   .put((req, res) => {
 
