@@ -14,7 +14,7 @@ class TortoiseDB {
         return this._client.db(dbName);
       });
   }
-
+  //db.collection(...).insertOne(...).then(...).catch(...).finally is not a function
   insertDoc(doc) {
     return this.connect().then(db => {
       db.collection(storeName).insertOne(doc)
