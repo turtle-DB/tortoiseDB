@@ -1,10 +1,7 @@
-const { MongoClient, ObjectID } = require('mongodb');
+const { MongoClient } = require('mongodb');
 const url = 'mongodb://localhost:27017';
 const dbName = 'tortoiseDB';
 const storeName = 'store';
-
-const express = require('express');
-const app = express();
 
 class MongoShell {
   connect() {
@@ -16,32 +13,43 @@ class MongoShell {
   }
 
   create(doc) {
-    return this.connect().then(db => {
-      db.collection(storeName).insertOne(doc)
-      .then(() => console.log("Successfully inserted document"))
-      .catch(err => console.log("Insert error:", err))
-      .finally(() => this._client.close())
-    });
+    return this.connect()
+      .then(db => db.collection(storeName).insertOne(doc))
+      .then(res => {
+        this._client.close();
+        console.log("Successfully inserted document");
+        return res;
+      })
+      .catch(err => {
+        this._client.close();
+        console.log("Insert error:", err)
+      })
   }
 
   read(_id) {
-    return this.connect().then((db) => db.collection(storeName).findOne({ _id }))
-    .then(res => res)
-    .catch(err => console.log("read error:", err))
-    .finally(res => {
-      this._client.close();
-      return res;
-    });
+    return this.connect()
+      .then((db) => db.collection(storeName).findOne({ _id }))
+      .then(res => {
+        this._client.close();
+        return res;
+      })
+      .catch(err => {
+        this._client.close();
+        console.log("read error:", err)
+      });
   }
 
   readAll() {
-    return this.connect().then((db) => db.collection(storeName).find().toArray())
-    .then(res => res)
-    .catch(err => console.log("readAll error:", err))
-    .finally(res => {
-      this._client.close();
-      return res;
-    });
+    return this.connect()
+      .then((db) => db.collection(storeName).find().toArray())
+      .then(res => {
+        this._client.close();
+        return res;
+      })
+      .catch(err => {
+        this._client.close();
+        console.log("readAll error:", err)
+      });
   }
 }
 
