@@ -1,15 +1,33 @@
 const { MongoClient } = require('mongodb');
-const url = 'mongodb://localhost:27017';
-const dbName = 'tortoiseDB';
-const storeName = 'store';
 
 class MongoShell {
+  constructor() {
+    this._store = 'store';
+    this._meta = 'metaStore';
+    this._url = 'mongodb://localhost:27017';
+    this._dbName = 'tortoiseDB';
+
+    // Check if both collections exist - if not, create them
+    this.connect()
+      .then(db => db.collections())
+      .then(storeNames => {
+        if (!storeNames.includes(this._store)) {
+          db.createCollection(this._store)
+        }
+        if (!storeNames.includes(this._meta)) {
+          db.createCollection(this._meta)
+        }
+      })
+      .catch(err => console.log("Error:", err));
+  }
+
   connect() {
-    return MongoClient.connect(url, { useNewUrlParser: true })
+    return MongoClient.connect(this._url, { useNewUrlParser: true })
       .then(client => {
         this._client = client;
-        return this._client.db(dbName);
-      });
+        return this._client.db(this._dbName);
+      })
+      .catch(err => console.log("error:", err));
   }
 
   create(doc) {
@@ -28,7 +46,7 @@ class MongoShell {
 
   read(_id) {
     return this.connect()
-      .then((db) => db.collection(storeName).findOne({ _id }))
+      .then((db) => db.collection(this._store).findOne({ _id }))
       .then(res => {
         this._client.close();
         return res;
@@ -41,7 +59,7 @@ class MongoShell {
 
   readAll() {
     return this.connect()
-      .then((db) => db.collection(storeName).find().toArray())
+      .then((db) => db.collection(this._store).find().toArray())
       .then(res => {
         this._client.close();
         return res;
@@ -49,6 +67,33 @@ class MongoShell {
       .catch(err => {
         this._client.close();
         console.log("readAll error:", err)
+      });
+  }
+
+  readAllMetaDocs() {
+    return this.connect()
+    .then((db) => db.collection(this._meta).find().toArray())
+    .then(res => {
+      this._client.close();
+      return res;
+    })
+    .catch(err => {
+      this._client.close();
+      console.log("readAllMetaDocs error:", err)
+    });
+
+  }
+
+  createMany(docs) {
+    return this.connect()
+      .then((db) => db.collection(_store).insertMany(docs))
+      .then(res => {
+        this._client.close();
+        return res;
+      })
+      .catch(err => {
+        this._client.close();
+        console.log("createMany error:", err)
       });
   }
 }

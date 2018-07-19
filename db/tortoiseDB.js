@@ -1,6 +1,7 @@
 const { mongoShell } = require('./mongoShell');
 
 class TortoiseDB {
+  // Basic crud
   create(doc) {
     return mongoShell.create(doc);
   }
@@ -11,6 +12,21 @@ class TortoiseDB {
 
   readAll() {
     return mongoShell.readAll();
+  }
+
+  // Bulk OPERATIONS
+
+  revDiffs(sourceMetaDocs) {
+    return mongoShell.readAllMetaDocs()
+      .then(localMetaDocs => console.log(localMetaDocs))
+      .catch(err => console.log(err));
+      //this.findMissingRevs(sourceMetaDocs, localMetaDocs)
+  }
+
+  updateDB(docs) {
+    console.log(docs);
+    // either insert or update
+    return mongoShell.createMany(docs);
   }
 }
 
