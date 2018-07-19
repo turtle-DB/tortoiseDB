@@ -7,9 +7,13 @@ class MongoShell {
     this._url = 'mongodb://localhost:27017';
     this._dbName = 'tortoiseDB';
 
+    let db;
     // Check if both collections exist - if not, create them
     this.connect()
-      .then(db => db.collections())
+      .then(tempDB => {
+        db = tempDB;
+        return db.collections();
+      })
       .then(storeNames => {
         if (!storeNames.includes(this._store)) {
           db.createCollection(this._store)
@@ -70,23 +74,29 @@ class MongoShell {
       });
   }
 
-  readAllMetaDocs() {
-    return this.connect()
-    .then((db) => db.collection(this._meta).find().toArray())
-    .then(res => {
-      this._client.close();
-      return res;
-    })
-    .catch(err => {
-      this._client.close();
-      console.log("readAllMetaDocs error:", err)
-    });
+  readAllMetaDocsIdsFromSource() {
+    return this.readAllMetaDocs()
+      .then(res => {
 
+      })
+  }
+
+  readAllMetaDocs(ids) {
+    return this.connect()
+      .then((db) => db.collection(this._meta).find({_id: {$in: ids}}).toArray())
+      .then(res => {
+        this._client.close();
+        return res;
+      })
+      .catch(err => {
+        this._client.close();
+        console.log("readAllMetaDocs error:", err)
+      });
   }
 
   createMany(docs) {
     return this.connect()
-      .then((db) => db.collection(_store).insertMany(docs))
+      .then((db) => db.collection(this._store).insertMany(docs))
       .then(res => {
         this._client.close();
         return res;
@@ -95,6 +105,18 @@ class MongoShell {
         this._client.close();
         console.log("createMany error:", err)
       });
+  }
+
+  updateMetaDocs(docs) {
+    return this.connect()
+      .then(db => {
+        const metaStore = db.collection(this._meta);
+
+        docs.forEach(doc => {
+          metaStore.update({ _id: doc._id }, doc, {upsert: true});
+        });
+      })
+      .catch(e => console.log(e));
   }
 }
 

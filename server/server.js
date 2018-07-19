@@ -32,16 +32,17 @@ app.route('/store')
   });
 
 app.post('/_bulk_docs', (req, res) => {
-  // console.log('recieved request:', req.body);
   tortoiseDB.updateDB(req.body.docs);
   res.send("Bulk docs received");
 });
 
 app.post('/_rev_diffs', (req, res) => {
-  console.log('recieved request:', req.body);
-  tortoiseDB.revDiffs(req.body.metaDocs);
-  // tortoiseDB.updateDB(req.body.docs);
-  res.send("Rev Diffs received");
+  //tortoiseDB.receiveReplicationBatch(req.body.metaDocs)
+  tortoiseDB.revDiffs(req.body.metaDocs)
+    .then(revIds => {
+      res.send(revIds);
+    })
+    .catch(err => console.log("RevDiffs Error:", err));
 });
 
 

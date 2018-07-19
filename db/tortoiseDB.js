@@ -16,16 +16,54 @@ class TortoiseDB {
 
   // Bulk OPERATIONS
 
+  //router /_rev_diffs
+    //tortoise.receiveChangeLog
+    //returns concat'd strings
+
+  //tortoise.receiveChangeLog
+    //tortoise.revDiffs -> returns metadoc discrepancies
+    //tortoise.updateMetaDocs -> updates the metaStore
+    //returns tortoise.prepareIDRevReponse -> returns concat'd strings
+
   revDiffs(sourceMetaDocs) {
-    return mongoShell.readAllMetaDocs()
-      .then(localMetaDocs => console.log(localMetaDocs))
+    const ids = sourceMetaDocs.map(doc => doc._id);
+
+    return mongoShell.readAllMetaDocs(ids)
+      .then(targetMetaDocs => {
+        const missingRevs = this.findMissingRevs(sourceMetaDocs, targetMetaDocs)
+        // should this be handled here?
+        mongoShell.updateMetaDocs(missingRevs);
+        return missingRevs;
+      })
+      .then(metaDocs => {
+        return metaDocs.map(doc => {
+          return doc._id + "::" + doc.revisions[0];
+        })
+      })
       .catch(err => console.log(err));
-      //this.findMissingRevs(sourceMetaDocs, localMetaDocs)
+  }
+
+  findMissingRevs(sourceMetaDocs, targetMetaDocs) {
+    const latestTargetDocRev = {};
+    targetMetaDocs.forEach(doc => {
+      latestTargetDocRev[doc._id] = doc.revisions[0];
+    })
+
+    return sourceMetaDocs.filter(doc => {
+      let targetRevId = latestTargetDocRev[doc._id];
+      if (targetRevId) {
+        if (targetRevId !== doc.revisions[0]) {
+          return true;
+        } else {
+          return false;
+        }
+      } else {
+        return true;
+      }
+    })
   }
 
   updateDB(docs) {
-    console.log(docs);
-    // either insert or update
     return mongoShell.createMany(docs);
   }
 }
