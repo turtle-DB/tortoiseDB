@@ -17,6 +17,7 @@ class MongoShell {
       .then(storeNames => {
         if (!storeNames.includes(this._store)) {
           db.createCollection(this._store)
+          .then(() => db.collection(this._store).createIndex({ _id_rev: 1 }))
         }
         if (!storeNames.includes(this._meta)) {
           db.createCollection(this._meta)
@@ -34,6 +35,8 @@ class MongoShell {
       .catch(err => console.log("error:", err));
   }
 
+  // CRUD from store:
+
   create(doc) {
     return this.connect()
       .then(db => db.collection(storeName).insertOne(doc))
@@ -48,18 +51,18 @@ class MongoShell {
       })
   }
 
-  read(_id) {
-    return this.connect()
-      .then((db) => db.collection(this._store).findOne({ _id }))
-      .then(res => {
-        this._client.close();
-        return res;
-      })
-      .catch(err => {
-        this._client.close();
-        console.log("read error:", err)
-      });
-  }
+  // read(_id_rev) {
+  //   return this.connect()
+  //     .then((db) => db.collection(this._store).find({ _id_rev }))
+  //     .then(res => {
+  //       this._client.close();
+  //       return res;
+  //     })
+  //     .catch(err => {
+  //       this._client.close();
+  //       console.log("read error:", err)
+  //     });
+  
 
   readAll() {
     return this.connect()
@@ -73,6 +76,8 @@ class MongoShell {
         console.log("readAll error:", err)
       });
   }
+
+  // CRUD from metastore:
 
   readAllMetaDocsIdsFromSource() {
     return this.readAllMetaDocs()

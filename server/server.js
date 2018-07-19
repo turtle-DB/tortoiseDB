@@ -1,5 +1,6 @@
 const express = require('express');
-const { tortoiseDB } = require('../db/tortoiseDB');
+const { TortoiseDB } = require('../db/tortoiseDB');
+const tortoiseDB = new TortoiseDB();
 
 const app = express();
 

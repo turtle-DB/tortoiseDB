@@ -70,4 +70,4 @@ class TortoiseDB {
 
 const tortoiseDB = new TortoiseDB();
 
-module.exports = { tortoiseDB };
+module.exports = { TortoiseDB };
