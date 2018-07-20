@@ -28,7 +28,7 @@ class TortoiseDB {
   revDiffs(sourceMetaDocs) {
     const ids = sourceMetaDocs.map(doc => doc._id);
 
-    return mongoShell.readAllMetaDocs(ids)
+    return mongoShell.readMetaDocs(ids)
       .then(targetMetaDocs => {
         const missingRevs = this.findMissingRevs(sourceMetaDocs, targetMetaDocs)
         // should this be handled here?

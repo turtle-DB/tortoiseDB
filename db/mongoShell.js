@@ -35,93 +35,60 @@ class MongoShell {
       .catch(err => console.log("error:", err));
   }
 
-  // CRUD from store:
+  // STORE OPERATIONS
+  reducer(store, action, arg) {
+    return this.connect()
+      .then(db => db.collection(store))
+      .then(collection => {
+        if (action === "CREATE") {
+          return collection.insertOne(arg);
+        } else if (action === "CREATE_MANY") {
+          return collection.insertMany(arg)
+        } else if (action === "READ") {
+          return collection.find(arg).toArray()
+        } else if (action === 'READ_ALL') {
+          return collection.find().toArray()
+        } else if (action === "UPDATE_MANY") {
+          arg.forEach(doc => {
+            collection.update({ _id: doc._id }, doc, {upsert: true});
+          });
+       }})
+      .then(res => {
+        this._client.close();
+        return res;
+      })
+      .catch(err => {
+        this._client.close();
+        console.log(`${action} error:`, err)
+      })
+  }
 
   create(doc) {
-    return this.connect()
-      .then(db => db.collection(storeName).insertOne(doc))
-      .then(res => {
-        this._client.close();
-        console.log("Successfully inserted document");
-        return res;
-      })
-      .catch(err => {
-        this._client.close();
-        console.log("Insert error:", err)
-      })
-  }
-
-  // read(_id_rev) {
-  //   return this.connect()
-  //     .then((db) => db.collection(this._store).find({ _id_rev }))
-  //     .then(res => {
-  //       this._client.close();
-  //       return res;
-  //     })
-  //     .catch(err => {
-  //       this._client.close();
-  //       console.log("read error:", err)
-  //     });
-  
-
-  readAll() {
-    return this.connect()
-      .then((db) => db.collection(this._store).find().toArray())
-      .then(res => {
-        this._client.close();
-        return res;
-      })
-      .catch(err => {
-        this._client.close();
-        console.log("readAll error:", err)
-      });
-  }
-
-  // CRUD from metastore:
-
-  readAllMetaDocsIdsFromSource() {
-    return this.readAllMetaDocs()
-      .then(res => {
-
-      })
-  }
-
-  readAllMetaDocs(ids) {
-    return this.connect()
-      .then((db) => db.collection(this._meta).find({_id: {$in: ids}}).toArray())
-      .then(res => {
-        this._client.close();
-        return res;
-      })
-      .catch(err => {
-        this._client.close();
-        console.log("readAllMetaDocs error:", err)
-      });
+    return this.reducer(this._store, "CREATE", doc);
   }
 
   createMany(docs) {
-    return this.connect()
-      .then((db) => db.collection(this._store).insertMany(docs))
-      .then(res => {
-        this._client.close();
-        return res;
-      })
-      .catch(err => {
-        this._client.close();
-        console.log("createMany error:", err)
-      });
+    return this.reducer(this._store, "CREATE_MANY", docs);
+  }
+
+
+  read(_id) {
+    return this.reducer(this._store, "READ", { _id })
+               .then(res => res[0]);
+  }
+
+  readAll() {
+    return this.storeReducer(this._store, "READ_ALL");
+  }
+
+  // METASTORE OPERATIONS
+
+  readMetaDocs(ids) {
+    return this.reducer(this._meta, 'READ', {_id: {$in: ids}})
   }
 
   updateMetaDocs(docs) {
-    return this.connect()
-      .then(db => {
-        const metaStore = db.collection(this._meta);
-
-        docs.forEach(doc => {
-          metaStore.update({ _id: doc._id }, doc, {upsert: true});
-        });
-      })
-      .catch(e => console.log(e));
+    return this.reducer(this._meta, 'UPDATE_MANY', docs);
   }
 }
 

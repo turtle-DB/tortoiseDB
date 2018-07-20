@@ -12,7 +12,9 @@ app.use((req, res, next) => {
 });
 
 
-app.get('/', (req, res) => res.send('Hello world!'));
+// app.get('/', (req, res) => res.send('Hello world
+
+////ROUTES FOR DEVELOPER
 
 app.get('/store/:id', (req, res) => {
   tortoiseDB.read(req.params.id)
@@ -31,6 +33,8 @@ app.route('/store')
     tortoiseDB.create(req.body)
       .then((result) => res.send(result));
   });
+
+///SYNC ROUTES
 
 app.post('/_bulk_docs', (req, res) => {
   tortoiseDB.updateDB(req.body.docs);
