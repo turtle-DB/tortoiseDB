@@ -26,6 +26,7 @@ class TortoiseDB {
     //returns tortoise.prepareIDRevReponse -> returns concat'd strings
 
   revDiffs(sourceMetaDocs) {
+    console.log(sourceMetaDocs);
     const ids = sourceMetaDocs.map(doc => doc._id);
 
     return mongoShell.readMetaDocs(ids)

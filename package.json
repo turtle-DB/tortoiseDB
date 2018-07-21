@@ -19,7 +19,8 @@
   "homepage": "https://github.com/turtle-DB/tortoiseDB#readme",
   "dependencies": {
     "express": "^4.16.3",
-    "mongodb": "^3.1.1"
+    "mongodb": "^3.1.1",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "nodemon": "^1.18.3"
