@@ -36,7 +36,6 @@ class TortoiseDB {
     const turtleID = req._id;
     let localTurtleHistory;
 
-
     return mongoShell.command(mongoShell._syncHistoryFrom, "READ", { _id: turtleID })
     .then(docs => {
       if (docs.length === 0) {
@@ -90,7 +89,43 @@ class TortoiseDB {
   }
 
   updateDB(docs) {
+    console.log('docs are', docs);
     return mongoShell.createMany(docs);
+  }
+
+  updateSyncHistory(turtleSyncRecord) {
+    let turtleID = turtleSyncRecord._id;
+    console.log('turtleID is', turtleID);
+    let localTurtleHistory;
+    let newHistoryDoc;
+    //get new history obj from turtleSyncRecord
+    const newHistory = turtleSyncRecord.history[0];
+    console.log('newHistory obj is', newHistory);
+    //get tortoise's local turtle history doc
+    return mongoShell.command(mongoShell._syncHistoryFrom, "READ", { _id: turtleID })
+    .then(docs => {
+      localTurtleHistory = docs[0];
+      console.log('localturtlehistory is', localTurtleHistory);
+      return localTurtleHistory;
+    })
+    //create new local doc using new history obj from turtle
+    .then(localTurtleHistory => this.createNewHistoryDoc(localTurtleHistory, newHistory))
+    .then(doc => newHistoryDoc = doc)
+    .then(() => {
+      //update tortoise
+      return mongoShell.command(
+        mongoShell._syncHistoryFrom,
+        "UPDATE",
+        newHistoryDoc
+      )
+    })
+  }
+
+  createNewHistoryDoc(localTurtleHistory, newHistory) {
+    let newHistoryDoc = Object.assign(
+      localTurtleHistory, { history: [newHistory].concat(localTurtleHistory.history) }
+    );
+    return newHistoryDoc;
   }
 }
 

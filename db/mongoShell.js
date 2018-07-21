@@ -65,6 +65,8 @@ class MongoShell {
           return collection.find(arg).toArray();
         } else if (action === 'READ_ALL') {
           return collection.find().toArray();
+        } else if (action === "UPDATE") {
+          collection.update({ _id: arg._id }, arg, {upsert: true});
         } else if (action === "UPDATE_MANY") {
           arg.forEach(doc => {
             collection.update({ _id: doc._id }, doc, {upsert: true});
