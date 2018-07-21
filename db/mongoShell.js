@@ -5,18 +5,19 @@ class MongoShell {
   constructor() {
     this._store = 'store';
     this._meta = 'metaStore';
-    this._sync = 'syncHistoryStore';
+    this._syncHistoryFrom = 'syncHistoryFrom';
+    this._syncHistoryTo = 'syncHistoryTo';
     this._url = 'mongodb://localhost:27017';
     this._dbName = 'tortoiseDB';
 
     let db;
-    // Check if both collections exist - if not, create them
     this.connect()
       .then(tempDB => {
         db = tempDB;
-        return db.collections();
+        return db.listCollections().toArray();
       })
-      .then(storeNames => {
+      .then(stores => {
+        const storeNames = stores.map(store => store.name);
         if (!storeNames.includes(this._store)) {
           db.createCollection(this._store)
           .then(() => db.collection(this._store).createIndex({ _id_rev: 1 }))
@@ -24,9 +25,12 @@ class MongoShell {
         if (!storeNames.includes(this._meta)) {
           db.createCollection(this._meta)
         }
-        if (!storeNames.includes(this._sync)) {
-          db.createCollection(this._sync)
-          .then(() => this.createLocalSyncHistory());
+        if (!storeNames.includes(this._syncHistoryFrom)) {
+          db.createCollection(this._syncHistoryFrom)
+          // .then(() => this.createLocalSyncHistory());
+        }
+        if (!storeNames.includes(this.syncHistoryTo)) {
+          db.createCollection(this._syncHistoryTo)
         }
       })
       .catch(err => console.log("Error:", err));
@@ -42,9 +46,9 @@ class MongoShell {
   }
 
   createLocalSyncHistory() {
-    const tortoiseID = uuidv4();
+    const tortoiseID = 'tortoiseDB' + '::' + uuidv4();
     const syncHistory = { history: [], _id: tortoiseID };
-    return this.command(this._sync, 'CREATE', syncHistory)
+    return this.command(this._syncHistoryFrom, 'CREATE', syncHistory)
     .catch(err => console.log(err));
   }
 
@@ -56,11 +60,11 @@ class MongoShell {
         if (action === "CREATE") {
           return collection.insertOne(arg);
         } else if (action === "CREATE_MANY") {
-          return collection.insertMany(arg)
+          return collection.insertMany(arg);
         } else if (action === "READ") {
-          return collection.find(arg).toArray()
+          return collection.find(arg).toArray();
         } else if (action === 'READ_ALL') {
-          return collection.find().toArray()
+          return collection.find().toArray();
         } else if (action === "UPDATE_MANY") {
           arg.forEach(doc => {
             collection.update({ _id: doc._id }, doc, {upsert: true});

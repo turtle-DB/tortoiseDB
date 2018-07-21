@@ -35,6 +35,14 @@ app.route('/store')
   });
 
 ///SYNC ROUTES
+app.post('/_compare_sync_history', (req, res) => {
+  tortoiseDB.compareSyncHistory(req.body)
+  .then(lastKey => {
+    console.log(lastKey);
+    res.send(lastKey.toString())
+  })
+  .catch(err => console.log("compare sync history error:", err))
+})
 
 app.post('/_bulk_docs', (req, res) => {
   tortoiseDB.updateDB(req.body.docs);
@@ -43,6 +51,7 @@ app.post('/_bulk_docs', (req, res) => {
 
 app.post('/_rev_diffs', (req, res) => {
   //tortoiseDB.receiveReplicationBatch(req.body.metaDocs)
+
   tortoiseDB.revDiffs(req.body.metaDocs)
     .then(revIds => {
       res.send(revIds);
