@@ -27,7 +27,6 @@ class MongoShell {
         }
         if (!storeNames.includes(this._syncHistoryFrom)) {
           db.createCollection(this._syncHistoryFrom)
-          // .then(() => this.createLocalSyncHistory());
         }
         if (!storeNames.includes(this.syncHistoryTo)) {
           db.createCollection(this._syncHistoryTo)

@@ -12,7 +12,26 @@ app.use((req, res, next) => {
 });
 
 
-// app.get('/', (req, res) => res.send('Hello world
+// Testing
+
+//store -
+//id - mongo ObjectID
+//value - { _id: 'dummy', name: 'dummyName' }
+
+//meta doc -
+//id - 'dummy'
+//value - { _id: 'dummy', revisions: ['1-abc'] }
+
+//syncHistoryTo
+//id - "tortoiseDB.."
+//value - { _id: "tortoiseDB...", history: [] }
+
+app.get("/generate", (req, res) => {
+  const dummyStore = { _id: "dummy", name: "dummyName"};
+  const dummyMeta = { _id: "dummy", revisions: ['1-abc']};
+  const dummySync = { }
+  tortoiseDB.generateDummyData(dummyStore, dummyMeta);
+})
 
 ////ROUTES FOR DEVELOPER
 
@@ -38,7 +57,6 @@ app.route('/store')
 app.post('/_compare_sync_history', (req, res) => {
   tortoiseDB.compareSyncHistory(req.body)
   .then(lastKey => {
-    console.log(lastKey);
     res.send(lastKey.toString())
   })
   .catch(err => console.log("compare sync history error:", err))
@@ -53,12 +71,8 @@ app.post('/_bulk_docs', (req, res) => {
 });
 
 app.post('/_rev_diffs', (req, res) => {
-  //tortoiseDB.receiveReplicationBatch(req.body.metaDocs)
-
   tortoiseDB.revDiffs(req.body.metaDocs)
-    .then(revIds => {
-      res.send(revIds);
-    })
+    .then(revIds => res.send(revIds))
     .catch(err => console.log("RevDiffs Error:", err));
 });
 

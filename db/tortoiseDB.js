@@ -1,16 +1,7 @@
 const { mongoShell } = require('./mongoShell');
+const { Replicator } = require('./Replicator');
 
 class TortoiseDB {
-  // Bulk OPERATIONS
-
-  //router /_rev_diffs
-    //tortoise.receiveChangeLog
-    //returns concat'd strings
-
-  //tortoise.receiveChangeLog
-    //tortoise.revDiffs -> returns metadoc discrepancies
-    //tortoise.updateMetaDocs -> updates the metaStore
-    //returns tortoise.prepareIDRevReponse -> returns concat'd strings
 
   createHistoryForTurtle(turtleID) {
     const turtleHistory = { _id: turtleID, history: [] }
@@ -90,10 +81,11 @@ class TortoiseDB {
 
   updateDB(docs) {
     console.log('docs are', docs);
-    return mongoShell.createMany(docs);
+    return mongoShell.createMany(docs)
   }
 
   updateSyncHistory(turtleSyncRecord) {
+    console.log('turtleSyncRecord:', turtleSyncRecord);
     let turtleID = turtleSyncRecord._id;
     console.log('turtleID is', turtleID);
     let localTurtleHistory;
@@ -126,6 +118,13 @@ class TortoiseDB {
       localTurtleHistory, { history: [newHistory].concat(localTurtleHistory.history) }
     );
     return newHistoryDoc;
+  }
+
+  generateDummyData({ dummyStore, dummyMeta, dummySync }) {
+    return this.mongoShell.command(this.mongoShell._store, "CREATE", dummyStore)
+    .then(() => this.mongoShell.command(this.mongoShell._meta, "CREATE", dummyMeta))
+    .then(() => this.mongoShell.command(this.mongoShell._syncHistoryTo, "CREATE", dummySync))
+    .then(res => res);
   }
 }
 
