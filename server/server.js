@@ -14,25 +14,12 @@ app.use((req, res, next) => {
 
 // Testing
 
-//store -
-//id - mongo ObjectID
-//value - { _id: 'dummy', name: 'dummyName' }
-
-//meta doc -
-//id - 'dummy'
-//value - { _id: 'dummy', revisions: ['1-abc'] }
-
-//syncHistoryTo
-//id - "tortoiseDB.."
-//value - { _id: "tortoiseDB...", history: [] }
-
 app.get("/generate", (req, res) => {
   const dummyStore = { _id: "dummy", name: "dummyName"};
   const dummyMeta = { _id: "dummy", revisions: ['1-abc']};
-  const dummySync = { }
-  tortoiseDB.generateDummyData(dummyStore, dummyMeta);
+  const dummySync = { _id: "dummyTurtle", history : [ { "lastKey" : 13, "sessionID" : "2018..." } ] }
+  tortoiseDB.generateDummyData({ dummyStore, dummyMeta, dummySync });
 })
-
 ////ROUTES FOR DEVELOPER
 
 app.get('/store/:id', (req, res) => {
@@ -49,8 +36,7 @@ app.route('/store')
       })
   })
   .post((req, res) => {
-    tortoiseDB.create(req.body)
-      .then((result) => res.send(result));
+    tortoiseDB.create(req.body).then(result => res.send(result));
   });
 
 ///SYNC ROUTES
@@ -60,14 +46,12 @@ app.post('/_compare_sync_history', (req, res) => {
     res.send(lastKey.toString())
   })
   .catch(err => console.log("compare sync history error:", err))
-})
+});
 
 app.post('/_bulk_docs', (req, res) => {
-  //console.log('docs:', req.body.docs);
-  //console.log('record:', req.body.sourceSyncRecord);
   tortoiseDB.updateDB(req.body.docs)
   .catch(err => new Error("Bulk docs insert error."))
-  .then(() => tortoiseDB.updateSyncHistory(req.body.sourceSyncRecord))
+  .then(() => tortoiseDB.updateSyncHistory(req.body.turtleSyncRecord))
   .then(() => res.send("Bulk docs received"))
   .catch(err => console.log(err));
 });

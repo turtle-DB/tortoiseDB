@@ -121,9 +121,9 @@ class TortoiseDB {
   }
 
   generateDummyData({ dummyStore, dummyMeta, dummySync }) {
-    return this.mongoShell.command(this.mongoShell._store, "CREATE", dummyStore)
-    .then(() => this.mongoShell.command(this.mongoShell._meta, "CREATE", dummyMeta))
-    .then(() => this.mongoShell.command(this.mongoShell._syncHistoryTo, "CREATE", dummySync))
+    return mongoShell.command(mongoShell._store, "CREATE", dummyStore)
+    .then(() => mongoShell.command(mongoShell._meta, "CREATE", dummyMeta))
+    .then(() => mongoShell.command(mongoShell._syncHistoryFrom, "CREATE", dummySync))
     .then(res => res);
   }
 }
