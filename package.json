@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/turtle-DB/tortoiseDB#readme",
   "dependencies": {
+    "axios": "^0.18.0",
     "express": "^4.16.3",
     "mongodb": "^3.1.1",
     "uuid": "^3.3.2"

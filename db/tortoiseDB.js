@@ -1,5 +1,5 @@
 const { mongoShell } = require('./mongoShell');
-const { Replicator } = require('./Replicator');
+const { Replicator } = require('./replicator');
 
 class TortoiseDB {
 
@@ -80,28 +80,28 @@ class TortoiseDB {
   }
 
   updateDB(docs) {
-    console.log('docs are', docs);
+    //console.log('docs are', docs);
     return mongoShell.createMany(docs)
   }
 
-  updateSyncHistory(turtleSyncRecord) {
-    console.log('turtleSyncRecord:', turtleSyncRecord);
-    let turtleID = turtleSyncRecord._id;
-    console.log('turtleID is', turtleID);
-    let localTurtleHistory;
+  updateSyncHistory(sourceSyncRecord) {
+    //console.log('sourceSyncRecord:', sourceSyncRecord);
+    let turtleID = sourceSyncRecord._id;
+    //console.log('turtleID is', turtleID);
+    let localSourceHistory;
     let newHistoryDoc;
-    //get new history obj from turtleSyncRecord
-    const newHistory = turtleSyncRecord.history[0];
-    console.log('newHistory obj is', newHistory);
+    //get new history obj from sourceSyncRecord
+    const newHistory = sourceSyncRecord.history[0];
+    //console.log('newHistory obj is', newHistory);
     //get tortoise's local turtle history doc
     return mongoShell.command(mongoShell._syncHistoryFrom, "READ", { _id: turtleID })
     .then(docs => {
-      localTurtleHistory = docs[0];
-      console.log('localturtlehistory is', localTurtleHistory);
-      return localTurtleHistory;
+      localSourceHistory = docs[0];
+      //console.log('localturtlehistory is', localSourceHistory);
+      return localSourceHistory;
     })
     //create new local doc using new history obj from turtle
-    .then(localTurtleHistory => this.createNewHistoryDoc(localTurtleHistory, newHistory))
+    .then(localSourceHistory => this.createNewHistoryDoc(localSourceHistory, newHistory))
     .then(doc => newHistoryDoc = doc)
     .then(() => {
       //update tortoise
@@ -113,9 +113,9 @@ class TortoiseDB {
     })
   }
 
-  createNewHistoryDoc(localTurtleHistory, newHistory) {
+  createNewHistoryDoc(localSourceHistory, newHistory) {
     let newHistoryDoc = Object.assign(
-      localTurtleHistory, { history: [newHistory].concat(localTurtleHistory.history) }
+      localSourceHistory, { history: [newHistory].concat(localSourceHistory.history) }
     );
     return newHistoryDoc;
   }

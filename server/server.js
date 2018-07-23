@@ -63,9 +63,11 @@ app.post('/_compare_sync_history', (req, res) => {
 })
 
 app.post('/_bulk_docs', (req, res) => {
+  //console.log('docs:', req.body.docs);
+  //console.log('record:', req.body.sourceSyncRecord);
   tortoiseDB.updateDB(req.body.docs)
   .catch(err => new Error("Bulk docs insert error."))
-  .then(() => tortoiseDB.updateSyncHistory(req.body.turtleSyncRecord))
+  .then(() => tortoiseDB.updateSyncHistory(req.body.sourceSyncRecord))
   .then(() => res.send("Bulk docs received"))
   .catch(err => console.log(err));
 });
