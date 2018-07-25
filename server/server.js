@@ -1,6 +1,8 @@
 const express = require('express');
-const { TortoiseDB } = require('../db/tortoiseDB');
-const tortoiseDB = new TortoiseDB();
+const { tortoiseDB } = require('../db/tortoiseDB');
+
+const replicateFrom = require('./routes/replicateFrom');
+const replicateTo = require('./routes/replicateTo');
 
 const app = express();
 
@@ -11,72 +13,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Testing
+app.use('/', replicateTo);
+app.use('/', replicateFrom);
 
-app.get("/generate", (req, res) => {
-  const dummyStore = { _id: "dummy", name: "dummyName"};
-  const dummyMeta = { _id: "dummy", revisions: ['1-abc']};
-  tortoiseDB.generateDummyData({ dummyStore, dummyMeta });
+// Generate Tortoise Dummy Data
+app.get("/generate/:numDocs", (req, res) => {
+  tortoiseDB.generateDummyData(req.params.numDocs)
+    .then(result => res.send(result))
+    .catch(err => console.log('/generate error:', err));
 })
-
-////ROUTES FOR DEVELOPER
-
-app.get('/store/:id', (req, res) => {
-  tortoiseDB.read(req.params.id)
-    .then(doc => res.send(doc));
-});
-
-app.route('/store')
-  .get((req, res) => {
-    tortoiseDB.readAll()
-      .then(docs => res.send(docs))
-      .catch(err => {
-        console.log("readAll error:", err);
-      })
-  })
-  .post((req, res) => {
-    tortoiseDB.create(req.body).then(result => res.send(result));
-  });
-
-///REPLICATE FROM TURTLE ROUTES
-
-app.post('/_compare_sync_history', (req, res) => {
-  tortoiseDB.replicateFrom();
-  tortoiseDB.replicatorFrom.compareSyncHistory(req.body)
-  .then(lastKey => {
-    res.send(lastKey.toString())
-  })
-  .catch(err => console.log("compare sync history error:", err))
-});
-
-app.post('/_bulk_docs', (req, res) => {
-  tortoiseDB.replicatorFrom.updateDB(req.body.docs)
-  .catch(err => new Error("Bulk docs insert error."))
-  .then(() => tortoiseDB.replicatorFrom.updateSyncHistory(req.body.sourceSyncRecord))
-  .then(() => res.send("Bulk docs received"))
-  .catch(err => console.log(err));
-});
-
-app.post('/_rev_diffs', (req, res) => {
-  tortoiseDB.replicatorFrom.revDiffs(req.body.metaDocs)
-    .then(revIds => res.send(revIds))
-    .catch(err => console.log("RevDiffs Error:", err));
-});
-
-///REPLICATE TO TURTLE ROUTES
-
-app.post('/_source_meta_docs', (req, res) => {
-  tortoiseDB.replicateTo();
-  console.log(tortoiseDB.replicatorTo);
-  tortoiseDB.replicatorTo.getSourceMetaDocs(req)
-    .then(metaDocs => res.send(metaDocs))
-    .catch(err => console.log(err))
-});
-
-app.post('/_source_store_docs', (req, res) => {
-  tortoiseDB.replicatorTo.getSourceStoreDocs(req)
-  .then(obj => res.send(obj));
-});
 
 //Node env object's production port or local 3000
 app.listen(process.env.PORT || 3000);
