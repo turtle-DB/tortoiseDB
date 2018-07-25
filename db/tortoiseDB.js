@@ -1,13 +1,13 @@
 const { mongoShell } = require('./mongoShell');
 const { SyncTo } = require('./syncTo');
-const { ReplicatorFrom } = require('./replicatorFrom');
+const { SyncFrom } = require('./syncFrom');
 
 const uuidv4 = require('uuid/v4');
 const md5 = require('md5');
 
 class TortoiseDB {
-  replicateFrom() {
-    this.replicatorFrom = new ReplicatorFrom();
+  syncFrom() {
+    this.syncFromSession = new SyncFrom();
   }
 
   syncTo() {

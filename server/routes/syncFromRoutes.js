@@ -5,10 +5,10 @@ const { tortoiseDB } = require('../../db/tortoiseDB');
 
 router.post('/_compare_sync_history', (req, res) => {
   // Initialize new replicateFrom object
-  tortoiseDB.replicateFrom();
+  tortoiseDB.syncFrom();
 
   // Then begin replication process
-  tortoiseDB.replicatorFrom.compareSyncHistory(req.body)
+  tortoiseDB.syncFromSession.getLastTortoiseKey(req.body)
   .then(lastKey => {
     res.send(lastKey.toString())
   })
@@ -16,18 +16,14 @@ router.post('/_compare_sync_history', (req, res) => {
 });
 
 router.post('/_bulk_docs', (req, res) => {
-  tortoiseDB.replicatorFrom.updateDB(req.body.docs)
-  .catch(err => new Error("Bulk docs insert error."))
-  .then(() => {
-    console.log(req.body);
-    tortoiseDB.replicatorFrom.updateSyncHistory(req.body.newSyncToTortoiseDoc)
-  })
+  tortoiseDB.syncFromSession.insertNewDocsIntoStore(req.body.docs)
+  .then(() => tortoiseDB.syncFromSession.updateSyncFromTurtleDoc(req.body.newSyncToTortoiseDoc))
   .then(() => res.send("Bulk docs received"))
-  .catch(err => console.log(err));
+  .catch(err => console.log("Bulk docs insert error:", err));
 });
 
 router.post('/_rev_diffs', (req, res) => {
-  tortoiseDB.replicatorFrom.revDiffs(req.body.metaDocs)
+  tortoiseDB.syncFromSession.revDiffs(req.body.metaDocs)
     .then(revIds => res.send(revIds))
     .catch(err => console.log("RevDiffs Error:", err));
 });

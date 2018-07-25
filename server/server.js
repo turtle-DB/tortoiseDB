@@ -1,8 +1,8 @@
 const express = require('express');
 const { tortoiseDB } = require('../db/tortoiseDB');
 
-const replicateFrom = require('./routes/replicateFrom');
-const syncTo = require('./routes/syncTo');
+const syncToRoutes = require('./routes/syncToRoutes');
+const syncFromRoutes = require('./routes/syncFromRoutes');
 
 const app = express();
 
@@ -13,8 +13,8 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/', syncTo);
-app.use('/', replicateFrom);
+app.use('/', syncToRoutes);
+app.use('/', syncFromRoutes);
 
 // Generate Tortoise Dummy Data
 app.get("/generate/:numDocs", (req, res) => {
