@@ -1,7 +1,6 @@
 const { MongoClient, ObjectId } = require('mongodb');
 const uuidv4 = require("uuid/v4");
 
-
 class MongoShell {
   constructor() {
     this._store = 'store';
@@ -90,25 +89,6 @@ class MongoShell {
         console.log(`${action} error:`, err)
       })
   }
-  // these can be deleted too in the future
-  create(doc) {
-    return this.command(this._store, "CREATE", doc);
-  }
-
-  createMany(docs) {
-    return this.command(this._store, "CREATE_MANY", docs);
-  }
-
-
-  read(_id) {
-    return this.command(this._store, "READ", { _id })
-               .then(res => res[0]);
-  }
-
-  readAll() {
-    return this.command(this._store, "READ_ALL");
-  }
-
   // METASTORE OPERATIONS
 
   readMetaDocs(ids) {

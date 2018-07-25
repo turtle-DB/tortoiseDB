@@ -11,7 +11,6 @@ app.use((req, res, next) => {
   next();
 });
 
-
 // Testing
 
 app.get("/generate", (req, res) => {
@@ -19,6 +18,7 @@ app.get("/generate", (req, res) => {
   const dummyMeta = { _id: "dummy", revisions: ['1-abc']};
   tortoiseDB.generateDummyData({ dummyStore, dummyMeta });
 })
+
 ////ROUTES FOR DEVELOPER
 
 app.get('/store/:id', (req, res) => {
@@ -39,8 +39,10 @@ app.route('/store')
   });
 
 ///REPLICATE FROM TURTLE ROUTES
+
 app.post('/_compare_sync_history', (req, res) => {
-  tortoiseDB.compareSyncHistory(req.body)
+  tortoiseDB.replicateFrom();
+  tortoiseDB.replicatorFrom.compareSyncHistory(req.body)
   .then(lastKey => {
     res.send(lastKey.toString())
   })
@@ -48,36 +50,33 @@ app.post('/_compare_sync_history', (req, res) => {
 });
 
 app.post('/_bulk_docs', (req, res) => {
-  tortoiseDB.updateDB(req.body.docs)
+  tortoiseDB.replicatorFrom.updateDB(req.body.docs)
   .catch(err => new Error("Bulk docs insert error."))
-  .then(() => tortoiseDB.updateSyncHistory(req.body.sourceSyncRecord))
+  .then(() => tortoiseDB.replicatorFrom.updateSyncHistory(req.body.sourceSyncRecord))
   .then(() => res.send("Bulk docs received"))
   .catch(err => console.log(err));
 });
 
 app.post('/_rev_diffs', (req, res) => {
-  tortoiseDB.revDiffs(req.body.metaDocs)
+  tortoiseDB.replicatorFrom.revDiffs(req.body.metaDocs)
     .then(revIds => res.send(revIds))
     .catch(err => console.log("RevDiffs Error:", err));
 });
 
 ///REPLICATE TO TURTLE ROUTES
+
 app.post('/_source_meta_docs', (req, res) => {
-  tortoiseDB.getSourceMetaDocs(req)
+  tortoiseDB.replicateTo();
+  console.log(tortoiseDB.replicatorTo);
+  tortoiseDB.replicatorTo.getSourceMetaDocs(req)
     .then(metaDocs => res.send(metaDocs))
     .catch(err => console.log(err))
 });
 
 app.post('/_source_store_docs', (req, res) => {
-  tortoiseDB.getSourceStoreDocs(req)
+  tortoiseDB.replicatorTo.getSourceStoreDocs(req)
   .then(obj => res.send(obj));
 });
-
-//
-// app.get('/_confirm_replication', (req, res) => {
-//
-// });
-
 
 //Node env object's production port or local 3000
 app.listen(process.env.PORT || 3000);
