@@ -5,8 +5,8 @@ class MongoShell {
   constructor() {
     this._store = 'store';
     this._meta = 'metaStore';
-    this._replicationHistoryFrom = 'replicationHistoryFrom';
-    this._replicationHistoryTo = 'replicationHistoryTo';
+    this._syncFromStore = 'syncFromStore';
+    this._syncToStore = 'syncToStore';
     this._url = 'mongodb://localhost:27017';
     this._dbName = 'tortoiseDB';
 
@@ -25,11 +25,11 @@ class MongoShell {
         if (!storeNames.includes(this._meta)) {
           db.createCollection(this._meta)
         }
-        if (!storeNames.includes(this._replicationHistoryFrom)) {
-          db.createCollection(this._replicationHistoryFrom)
+        if (!storeNames.includes(this._syncFromStore)) {
+          db.createCollection(this._syncFromStore)
         }
-        if (!storeNames.includes(this.replicationHistoryTo)) {
-          db.createCollection(this._replicationHistoryTo)
+        if (!storeNames.includes(this.syncToStore)) {
+          db.createCollection(this._syncToStore)
         }
       })
       .catch(err => console.log("Error:", err));
@@ -44,12 +44,12 @@ class MongoShell {
       .catch(err => console.log("error:", err));
   }
 
-  createLocalSyncHistory() {
-    const tortoiseID = 'tortoiseDB' + '::' + uuidv4();
-    const syncHistory = { history: [], _id: tortoiseID };
-    return this.command(this._replicationHistoryFrom, 'CREATE', syncHistory)
-    .catch(err => console.log(err));
-  }
+  // createLocalSyncHistory() {
+  //   const tortoiseID = 'tortoiseDB' + '::' + uuidv4();
+  //   const syncHistory = { history: [], _id: tortoiseID };
+  //   return this.command(this._replicationHistoryFrom, 'CREATE', syncHistory)
+  //   .catch(err => console.log(err));
+  // }
 
   // STORE OPERATIONS
   command(store, action, query, projection) {
@@ -77,7 +77,7 @@ class MongoShell {
           collection.update({ _id: query._id }, query, {upsert: true});
         } else if (action === "UPDATE_MANY") {
           query.forEach(doc => {
-            collection.update({ _id: doc._id }, doc, {upsert: true});
+            collection.update({ _id: doc._id }, query, {upsert: true});
           });
        }})
       .then(res => {

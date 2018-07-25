@@ -1,5 +1,5 @@
 const { mongoShell } = require('./mongoShell');
-const { ReplicatorTo } = require('./replicatorTo');
+const { SyncTo } = require('./syncTo');
 const { ReplicatorFrom } = require('./replicatorFrom');
 
 const uuidv4 = require('uuid/v4');
@@ -10,8 +10,8 @@ class TortoiseDB {
     this.replicatorFrom = new ReplicatorFrom();
   }
 
-  replicateTo() {
-    this.replicatorTo = new ReplicatorTo();
+  syncTo() {
+    this.syncToSession = new SyncTo();
   }
 
   generateDummyData(numDocs) {

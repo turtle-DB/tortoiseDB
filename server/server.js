@@ -2,7 +2,7 @@ const express = require('express');
 const { tortoiseDB } = require('../db/tortoiseDB');
 
 const replicateFrom = require('./routes/replicateFrom');
-const replicateTo = require('./routes/replicateTo');
+const syncTo = require('./routes/syncTo');
 
 const app = express();
 
@@ -13,7 +13,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use('/', replicateTo);
+app.use('/', syncTo);
 app.use('/', replicateFrom);
 
 // Generate Tortoise Dummy Data
