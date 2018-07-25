@@ -129,7 +129,7 @@ class TortoiseDB {
     .then(res => res);
   }
 
-/////// REPLICATE TO TURTLE
+///////=====> REPLICATE TO TURTLE
   // replicateFrom() {
   //   this.replicator = new Replicator();
   // }
@@ -138,6 +138,7 @@ class TortoiseDB {
 
   // { turtleID: this.turtleID, lastKey: this.lastTargetKey }
   getSourceMetaDocs(req) {
+    this.sessionID = new Date().toISOString();
     this.turtleID = req.body.turtleID;
     this.lastTargetKey = req.body.lastTargetKey;
 
@@ -145,19 +146,6 @@ class TortoiseDB {
     return this.getHighestStoreKey()
     .then(() => this.getChangedMetaDocsForTarget());
   }
-
-  // getSourceHistoryDoc() {
-  //   //.then(syncRecords => this.sourceHistoryDoc = syncRecords[0])
-  //
-  //   return mongoShell.command(mongoShell._replicationHistoryTo, "READ", { _id: this.turtleID })
-  //   .then(docs => {
-  //     if (docs.length === 0) {
-  //       return this.createReplicationHistoryToTurtle(this.turtleID)
-  //     } else {
-  //       return Promise.resolve(docs[0]);
-  //     }
-  //   })
-  // }
 
   createReplicationHistoryToTurtle(turtleID) {
     const turtleHistory = { _id: turtleID, history: [] }
@@ -214,6 +202,44 @@ class TortoiseDB {
     // return Promise.all(promises);
 
     return mongoShell.command(mongoShell._meta, "READ", { _id: { $in: ids } });
+  }
+
+  getSourceStoreDocs(req) {
+    const revIds = req.body.revIds;
+    return this.getChangedStoreDocsForTarget(revIds)
+    .then(docs => this.sourceStoreDocsForTarget = docs)
+    .then(() => this.createNewSyncDocument())
+    .then(() => {
+      return {
+        docs: this.sourceStoreDocsForTarget,
+        sourceSyncRecord: this.sourceSyncRecord
+      }
+    })
+  }
+
+  getChangedStoreDocsForTarget(revIds) {
+    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } });
+  }
+
+  createNewSyncDocument() {
+    return this.getSourceHistoryDoc()
+    .then(sourceHistoryDoc => {
+      let newHistory = { lastKey: this.highestSourceKey, sessionID: this.sessionID };
+      this.sourceSyncRecord = Object.assign(
+        sourceHistoryDoc, { history: [newHistory].concat(sourceHistoryDoc.history) }
+      );
+    })
+  }
+
+  getSourceHistoryDoc() {
+    return mongoShell.command(mongoShell._replicationHistoryTo, "READ", { _id: this.turtleID })
+      .then(docs => {
+        if (docs.length === 0) {
+          return this.createReplicationHistoryToTurtle(this.turtleID)
+        } else {
+          return docs[0];
+        }
+      });
   }
 }
 
