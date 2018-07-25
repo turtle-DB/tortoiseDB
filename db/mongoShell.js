@@ -53,31 +53,31 @@ class MongoShell {
   }
 
   // STORE OPERATIONS
-  command(store, action, arg) {
+  command(store, action, query, projection) {
     return this.connect()
       .then(db => db.collection(store))
       .then(collection => {
         if (action === "CREATE") {
-          return collection.insertOne(arg);
+          return collection.insertOne(query);
         } else if (action === "CREATE_MANY") {
-          return collection.insertMany(arg);
+          return collection.insertMany(query);
         } else if (action === "READ") {
-          return collection.find(arg, {_id: 0}).toArray();
+          return collection.find(query, projection).toArray();
         } else if (action === 'READ_ALL') {
-          return collection.find({}, {_id: 0}).toArray();
+          return collection.find({}).toArray();
         } else if (action === 'READ_BETWEEN') {
           return collection.find({
             _id: {
-              $gt: ObjectId(arg.min),
-              $lte: ObjectId(arg.max)
+              $gt: ObjectId(query.min),
+              $lte: ObjectId(query.max)
             }
-          }, {_id: 0}).toArray();
+          }).toArray();
         } else if (action === 'GET_MAX_ID') {
           return collection.find().sort({_id: -1}).limit(1).toArray();
         } else if (action === "UPDATE") {
-          collection.update({ _id: arg._id }, arg, {upsert: true});
+          collection.update({ _id: query._id }, query, {upsert: true});
         } else if (action === "UPDATE_MANY") {
-          arg.forEach(doc => {
+          query.forEach(doc => {
             collection.update({ _id: doc._id }, doc, {upsert: true});
           });
        }})

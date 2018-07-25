@@ -143,22 +143,17 @@ class TortoiseDB {
     if (this.lastTargetKey === this.highestSourceKey) {
       return Promise.reject("No sync needed.")
     } else {
-      return this.getMetaDocsOfUpdatedDocs(this.lastTargetKey, this.highestSourceKey)
+      return this.getStoreDocsBetweenKeys(this.lastTargetKey, this.highestSourceKey)
         .then(docs => this.getUniqueIDs(docs))
         .then(ids => this.getMetaDocsByIDs(ids))
     }
   }
 
-  getMetaDocsOfUpdatedDocs(lastTargetKey, highestSourceKey) {
-    console.log('lastKey', lastTargetKey);
-    console.log('highestsourcekey', highestSourceKey);
-    // return this.idb.command(this.idb._store, "READ_BETWEEN", { x: lastKey + 1, y: highestSourceKey })
-    // .then(docs => this.getUniqueIDs(docs))
-    // .then(ids => this.getMetaDocsByIDs(ids))
+  getStoreDocsBetweenKeys(lastTargetKey, highestSourceKey) {
     if (lastTargetKey !== '0') {
-      return mongoShell.command(mongoShell._store, "READ_BETWEEN", { min: lastTargetKey, max: highestSourceKey })
+      return mongoShell.command(mongoShell._store, "READ_BETWEEN", { min: lastTargetKey, max: highestSourceKey });
     } else {
-      return mongoShell.command(mongoShell._store, "READ_ALL", {})
+      return mongoShell.command(mongoShell._store, "READ_ALL", {});
     }
   }
 
@@ -198,7 +193,7 @@ class TortoiseDB {
   }
 
   getChangedStoreDocsForTarget(revIds) {
-    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } });
+    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } }, {fields: {_id: 0}});
   }
 
   createNewSyncDocument() {
