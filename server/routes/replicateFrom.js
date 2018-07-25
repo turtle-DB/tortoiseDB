@@ -18,7 +18,10 @@ router.post('/_compare_sync_history', (req, res) => {
 router.post('/_bulk_docs', (req, res) => {
   tortoiseDB.replicatorFrom.updateDB(req.body.docs)
   .catch(err => new Error("Bulk docs insert error."))
-  .then(() => tortoiseDB.replicatorFrom.updateSyncHistory(req.body.sourceSyncRecord))
+  .then(() => {
+    console.log(req.body);
+    tortoiseDB.replicatorFrom.updateSyncHistory(req.body.newSyncToTortoiseDoc)
+  })
   .then(() => res.send("Bulk docs received"))
   .catch(err => console.log(err));
 });

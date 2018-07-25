@@ -95,12 +95,6 @@ class ReplicatorFrom {
     );
     return newHistoryDoc;
   }
-
-  generateDummyData({ dummyStore, dummyMeta, dummySync }) {
-    return mongoShell.command(mongoShell._store, "CREATE", dummyStore)
-    .then(() => mongoShell.command(mongoShell._meta, "CREATE", dummyMeta))
-    .then(res => res);
-  }
 }
 
 module.exports = { ReplicatorFrom };
