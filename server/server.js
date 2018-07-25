@@ -17,8 +17,7 @@ app.use((req, res, next) => {
 app.get("/generate", (req, res) => {
   const dummyStore = { _id: "dummy", name: "dummyName"};
   const dummyMeta = { _id: "dummy", revisions: ['1-abc']};
-  const dummySync = { _id: "dummyTurtle", history : [ { "lastKey" : 13, "sessionID" : "2018..." } ] }
-  tortoiseDB.generateDummyData({ dummyStore, dummyMeta, dummySync });
+  tortoiseDB.generateDummyData({ dummyStore, dummyMeta });
 })
 ////ROUTES FOR DEVELOPER
 
@@ -51,7 +50,7 @@ app.post('/_compare_sync_history', (req, res) => {
 app.post('/_bulk_docs', (req, res) => {
   tortoiseDB.updateDB(req.body.docs)
   .catch(err => new Error("Bulk docs insert error."))
-  .then(() => tortoiseDB.updateSyncHistory(req.body.turtleSyncRecord))
+  .then(() => tortoiseDB.updateSyncHistory(req.body.sourceSyncRecord))
   .then(() => res.send("Bulk docs received"))
   .catch(err => console.log(err));
 });

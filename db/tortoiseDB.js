@@ -10,26 +10,13 @@ class TortoiseDB {
     .catch(err => console.log(err));
   }
 
-
-
-  //sync store:
-
-  //Turtle A -
-  //_id: "TurtleDB::123", value: {_id: "TurtleDB::123", history: [] }
-  //Turtle B
-  //_id: "TurtleDB:456", value: {_id: "TurtleDB:456", history: [] }
-
-  //Tortoise to Turtle A
-  //_id: "TurtleDB::123", value: {_id: "TortoiseDB::xyzkASdi", turtleID: "TurtleDB::123", history: []}
-  //Tortoise to Turtle B
-  //_id: "TurtleDB::456", value: {_id: "TortoiseDB::xyzkASdi", turtleID: "TurtleDB::456", history: []}
-
+  ///////=====> REPLICATE FROM TURTLE
   compareSyncHistory(req) {
     const turtleHistory = req.history;
     const turtleID = req._id;
     let localTurtleHistory;
 
-    return mongoShell.command(mongoShell._syncHistoryFrom, "READ", { _id: turtleID })
+    return mongoShell.command(mongoShell._replicationHistoryFrom, "READ", { _id: turtleID })
     .then(docs => {
       if (docs.length === 0) {
         return this.createReplicationHistoryFromTurtle(turtleID)
@@ -82,12 +69,11 @@ class TortoiseDB {
   }
 
   updateDB(docs) {
-    //console.log('docs are', docs);
     return mongoShell.createMany(docs)
   }
 
   updateSyncHistory(sourceSyncRecord) {
-    //console.log('sourceSyncRecord:', sourceSyncRecord);
+    console.log('sourceSyncRecord:', sourceSyncRecord);
     let turtleID = sourceSyncRecord._id;
     //console.log('turtleID is', turtleID);
     let localSourceHistory;
@@ -96,7 +82,7 @@ class TortoiseDB {
     const newHistory = sourceSyncRecord.history[0];
     //console.log('newHistory obj is', newHistory);
     //get tortoise's local turtle history doc
-    return mongoShell.command(mongoShell._syncHistoryFrom, "READ", { _id: turtleID })
+    return mongoShell.command(mongoShell._replicationHistoryFrom, "READ", { _id: turtleID })
     .then(docs => {
       localSourceHistory = docs[0];
       //console.log('localturtlehistory is', localSourceHistory);
@@ -108,7 +94,7 @@ class TortoiseDB {
     .then(() => {
       //update tortoise
       return mongoShell.command(
-        mongoShell._syncHistoryFrom,
+        mongoShell._replicationHistoryFrom,
         "UPDATE",
         newHistoryDoc
       )
@@ -125,24 +111,15 @@ class TortoiseDB {
   generateDummyData({ dummyStore, dummyMeta, dummySync }) {
     return mongoShell.command(mongoShell._store, "CREATE", dummyStore)
     .then(() => mongoShell.command(mongoShell._meta, "CREATE", dummyMeta))
-    .then(() => mongoShell.command(mongoShell._syncHistoryFrom, "CREATE", dummySync))
     .then(res => res);
   }
 
 ///////=====> REPLICATE TO TURTLE
-  // replicateFrom() {
-  //   this.replicator = new Replicator();
-  // }
-
-  //
-
-  // { turtleID: this.turtleID, lastKey: this.lastTargetKey }
   getSourceMetaDocs(req) {
     this.sessionID = new Date().toISOString();
     this.turtleID = req.body.turtleID;
     this.lastTargetKey = req.body.lastTargetKey;
 
-    // return this.getSourceHistoryDoc()
     return this.getHighestStoreKey()
     .then(() => this.getChangedMetaDocsForTarget());
   }
@@ -207,7 +184,10 @@ class TortoiseDB {
   getSourceStoreDocs(req) {
     const revIds = req.body.revIds;
     return this.getChangedStoreDocsForTarget(revIds)
-    .then(docs => this.sourceStoreDocsForTarget = docs)
+    .then(docs => {
+      console.log('store docs', docs);
+      this.sourceStoreDocsForTarget = docs;
+    })
     .then(() => this.createNewSyncDocument())
     .then(() => {
       return {

@@ -48,7 +48,7 @@ class MongoShell {
   createLocalSyncHistory() {
     const tortoiseID = 'tortoiseDB' + '::' + uuidv4();
     const syncHistory = { history: [], _id: tortoiseID };
-    return this.command(this._syncHistoryFrom, 'CREATE', syncHistory)
+    return this.command(this._replicationHistoryFrom, 'CREATE', syncHistory)
     .catch(err => console.log(err));
   }
 
@@ -62,16 +62,16 @@ class MongoShell {
         } else if (action === "CREATE_MANY") {
           return collection.insertMany(arg);
         } else if (action === "READ") {
-          return collection.find(arg).toArray();
+          return collection.find(arg, {_id: 0}).toArray();
         } else if (action === 'READ_ALL') {
-          return collection.find().toArray();
+          return collection.find({}, {_id: 0}).toArray();
         } else if (action === 'READ_BETWEEN') {
           return collection.find({
             _id: {
               $gt: ObjectId(arg.min),
               $lte: ObjectId(arg.max)
             }
-          }).toArray();
+          }, {_id: 0}).toArray();
         } else if (action === 'GET_MAX_ID') {
           return collection.find().sort({_id: -1}).limit(1).toArray();
         } else if (action === "UPDATE") {
