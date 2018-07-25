@@ -39,7 +39,7 @@ app.route('/store')
     tortoiseDB.create(req.body).then(result => res.send(result));
   });
 
-///SYNC ROUTES
+///REPLICATE FROM TURTLE ROUTES
 app.post('/_compare_sync_history', (req, res) => {
   tortoiseDB.compareSyncHistory(req.body)
   .then(lastKey => {
@@ -62,6 +62,21 @@ app.post('/_rev_diffs', (req, res) => {
     .catch(err => console.log("RevDiffs Error:", err));
 });
 
+///REPLICATE TO TURTLE ROUTES
+app.post('/_source_meta_docs', (req, res) => {
+  console.log(req.body.lastKey);
+  tortoiseDB.getSourceMetaDocs(req)
+    .then(metaDocs => res.send(metaDocs))
+    .catch(err => console.log(err))
+});
+
+// app.post('/_source_store_docs'), (req, res) => {
+//   //tortoiseDB.replicator
+// });
+//
+// app.get('/_confirm_replication'), (req, res) => {
+//
+// });
 
 
 //Node env object's production port or local 3000

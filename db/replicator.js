@@ -1,9 +1,10 @@
 const uuid4 = require('uuid/v4');
 const axios = require('axios');
 
+const { mongoShell } = require('./mongoShell');
+
 class Replicator {
-  constructor(targetUrl) {
-    this.targetUrl = targetUrl; // for testing purposes only
+  constructor() {
     this.sessionID = this.generateSessionID();
   }
 
@@ -21,7 +22,7 @@ class Replicator {
   //Target = Target
 
   replicate() {
-    this.getSourceHistoryDoc() //this.sourceHistoryDoc
+    //this.getSourceHistoryDoc() //this.sourceHistoryDoc
     // .then(() => this.getHighestStoreKey()) //this.highestSourceKey
     // .then(() => this.getLastTargetKey('/_compare_sync_history')) //this.lastTargetKey
     // .then(() => this.getChangedMetaDocsForTarget()) //this.metaDocs
@@ -32,6 +33,16 @@ class Replicator {
     // .then(() => this.updateSourceSyncHistory(this.sourceSyncRecord))
     // .catch(err => console.log(err));
   }
+
+  getSourceMetaDocs(req) {
+    this.turtleID = req.body.turtleID;
+    this.lastTargetKey = req.body.lastTargetKey;
+
+    this.getSourceHistoryDoc()
+      // .then(sourceHistoryDoc => this.getHighestStoreKey())
+      // .then(highestStoreKey => this.getChangedMetaDocsForTarget(lastTargetKey, highestStoreKey))
+  }
+
 
   // sendSourceDocsAndSyncRecordToTarget(path) {
   //   return axios.post(this.targetUrl + path, { docs: this.sourceStoreDocsForTarget, sourceSyncRecord: this.sourceSyncRecord })
@@ -51,9 +62,14 @@ class Replicator {
   // }
 
   getSourceHistoryDoc() {
-    return this.idb.command(this.idb._sync, "READ_ALL", {})
-    .then(syncRecords => syncRecords.filter(record => record._id.split("::")[0] === 'sourceDB')[0])
+    // return this.idb.command(this.idb._sync, "READ_ALL", {})
+    // .then(syncRecords => syncRecords.filter(record => record._id.split("::")[0] === 'sourceDB')[0])
+    // .then(history => this.sourceHistoryDoc = history)
+
+    return mongoShell.command(mongoShell._syncHistoryTo, "READ_ALL", {})
+    .then(syncRecords => syncRecords.filter(record => record._id === this.turtleID)[0])
     .then(history => this.sourceHistoryDoc = history)
+    .then(() => console.log('sourceHistoryDoc:', this.sourceHistoryDoc))
   }
 
   // getHighestStoreKey() {

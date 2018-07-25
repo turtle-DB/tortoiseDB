@@ -3,12 +3,14 @@ const { Replicator } = require('./replicator');
 
 class TortoiseDB {
 
-  createHistoryForTurtle(turtleID) {
+  createReplicationHistoryFromTurtle(turtleID) {
     const turtleHistory = { _id: turtleID, history: [] }
-    return mongoShell.command(mongoShell._syncHistoryFrom, "CREATE", turtleHistory)
+    return mongoShell.command(mongoShell._replicationHistoryFrom, "CREATE", turtleHistory)
     .then(() => turtleHistory)
     .catch(err => console.log(err));
   }
+
+
 
   //sync store:
 
@@ -30,7 +32,7 @@ class TortoiseDB {
     return mongoShell.command(mongoShell._syncHistoryFrom, "READ", { _id: turtleID })
     .then(docs => {
       if (docs.length === 0) {
-        return this.createHistoryForTurtle(turtleID)
+        return this.createReplicationHistoryFromTurtle(turtleID)
       } else {
         return Promise.resolve(docs[0]);
       }
@@ -125,6 +127,93 @@ class TortoiseDB {
     .then(() => mongoShell.command(mongoShell._meta, "CREATE", dummyMeta))
     .then(() => mongoShell.command(mongoShell._syncHistoryFrom, "CREATE", dummySync))
     .then(res => res);
+  }
+
+/////// REPLICATE TO TURTLE
+  // replicateFrom() {
+  //   this.replicator = new Replicator();
+  // }
+
+  //
+
+  // { turtleID: this.turtleID, lastKey: this.lastTargetKey }
+  getSourceMetaDocs(req) {
+    this.turtleID = req.body.turtleID;
+    this.lastTargetKey = req.body.lastTargetKey;
+
+    // return this.getSourceHistoryDoc()
+    return this.getHighestStoreKey()
+    .then(() => this.getChangedMetaDocsForTarget());
+  }
+
+  // getSourceHistoryDoc() {
+  //   //.then(syncRecords => this.sourceHistoryDoc = syncRecords[0])
+  //
+  //   return mongoShell.command(mongoShell._replicationHistoryTo, "READ", { _id: this.turtleID })
+  //   .then(docs => {
+  //     if (docs.length === 0) {
+  //       return this.createReplicationHistoryToTurtle(this.turtleID)
+  //     } else {
+  //       return Promise.resolve(docs[0]);
+  //     }
+  //   })
+  // }
+
+  createReplicationHistoryToTurtle(turtleID) {
+    const turtleHistory = { _id: turtleID, history: [] }
+    return mongoShell.command(mongoShell._replicationHistoryTo, "CREATE", turtleHistory)
+    .then(() => turtleHistory)
+    .catch(err => console.log(err));
+  }
+
+  getHighestStoreKey() {
+    return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
+      .then(key => {
+        //console.log('max key:', key[0]._id.toString());
+        this.highestSourceKey = key[0]._id.toString();
+      });
+  }
+
+  getChangedMetaDocsForTarget() {
+    if (this.lastTargetKey === this.highestSourceKey) {
+      return Promise.reject("No sync needed.")
+    } else {
+      return this.getMetaDocsOfUpdatedDocs(this.lastTargetKey, this.highestSourceKey)
+        .then(docs => this.getUniqueIDs(docs))
+        .then(ids => this.getMetaDocsByIDs(ids))
+    }
+  }
+
+  getMetaDocsOfUpdatedDocs(lastTargetKey, highestSourceKey) {
+    console.log('lastKey', lastTargetKey);
+    console.log('highestsourcekey', highestSourceKey);
+    // return this.idb.command(this.idb._store, "READ_BETWEEN", { x: lastKey + 1, y: highestSourceKey })
+    // .then(docs => this.getUniqueIDs(docs))
+    // .then(ids => this.getMetaDocsByIDs(ids))
+    if (lastTargetKey !== '0') {
+      return mongoShell.command(mongoShell._store, "READ_BETWEEN", { min: lastTargetKey, max: highestSourceKey })
+    } else {
+      return mongoShell.command(mongoShell._store, "READ_ALL", {})
+    }
+  }
+
+  getUniqueIDs(docs) {
+    let ids = {};
+    for (let i = 0; i < docs.length; i++) {
+      const id = docs[i]._id_rev.split("::")[0];
+      if (ids[id]) continue;
+      ids[id] = true;
+    }
+    const uniqueIDs = Object.keys(ids);
+    return uniqueIDs;
+  }
+
+  getMetaDocsByIDs(ids) {
+    // let promises = [];
+    // ids.forEach(_id => promises.push(mongoShell.command(this.mongoShell._meta, "READ", { _id: _id }));
+    // return Promise.all(promises);
+
+    return mongoShell.command(mongoShell._meta, "READ", { _id: { $in: ids } });
   }
 }
 

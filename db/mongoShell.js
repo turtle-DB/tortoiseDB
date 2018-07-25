@@ -1,12 +1,13 @@
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const uuidv4 = require("uuid/v4");
+
 
 class MongoShell {
   constructor() {
     this._store = 'store';
     this._meta = 'metaStore';
-    this._syncHistoryFrom = 'syncHistoryFrom';
-    this._syncHistoryTo = 'syncHistoryTo';
+    this._replicationHistoryFrom = 'replicationHistoryFrom';
+    this._replicationHistoryTo = 'replicationHistoryTo';
     this._url = 'mongodb://localhost:27017';
     this._dbName = 'tortoiseDB';
 
@@ -25,11 +26,11 @@ class MongoShell {
         if (!storeNames.includes(this._meta)) {
           db.createCollection(this._meta)
         }
-        if (!storeNames.includes(this._syncHistoryFrom)) {
-          db.createCollection(this._syncHistoryFrom)
+        if (!storeNames.includes(this._replicationHistoryFrom)) {
+          db.createCollection(this._replicationHistoryFrom)
         }
-        if (!storeNames.includes(this.syncHistoryTo)) {
-          db.createCollection(this._syncHistoryTo)
+        if (!storeNames.includes(this.replicationHistoryTo)) {
+          db.createCollection(this._replicationHistoryTo)
         }
       })
       .catch(err => console.log("Error:", err));
@@ -64,6 +65,15 @@ class MongoShell {
           return collection.find(arg).toArray();
         } else if (action === 'READ_ALL') {
           return collection.find().toArray();
+        } else if (action === 'READ_BETWEEN') {
+          return collection.find({
+            _id: {
+              $gt: ObjectId(arg.min),
+              $lte: ObjectId(arg.max)
+            }
+          }).toArray();
+        } else if (action === 'GET_MAX_ID') {
+          return collection.find().sort({_id: -1}).limit(1).toArray();
         } else if (action === "UPDATE") {
           collection.update({ _id: arg._id }, arg, {upsert: true});
         } else if (action === "UPDATE_MANY") {
