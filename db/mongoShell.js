@@ -74,10 +74,10 @@ class MongoShell {
         } else if (action === 'GET_MAX_ID') {
           return collection.find().sort({_id: -1}).limit(1).toArray();
         } else if (action === "UPDATE") {
-          collection.update({ _id: query._id }, query, {upsert: true});
+          return collection.update({ _id: query._id }, query, {upsert: true});
         } else if (action === "UPDATE_MANY") {
           query.forEach(doc => {
-            collection.update({ _id: doc._id }, query, {upsert: true});
+            collection.update({ _id: doc._id }, doc, {upsert: true});
           });
        }})
       .then(res => {
@@ -91,7 +91,7 @@ class MongoShell {
   }
   // METASTORE OPERATIONS
 
-  readMetaDocs(ids) {
+  getMetaDocsByIds(ids) {
     return this.command(this._meta, 'READ', {_id: {$in: ids}})
   }
 
