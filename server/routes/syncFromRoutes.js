@@ -16,9 +16,12 @@ router.post('/_last_tortoise_key', (req, res) => {
 });
 
 router.post('/_missing_rev_ids', (req, res) => {
-  tortoiseDB.syncFromSession.findMissingLeafNodes(req.body.metaDocs)
-    .then(missingRevIds => res.send(missingRevIds))
-    .catch(err => console.log("_missing_rev_ids error:", err));
+  tortoiseDB.syncFromSession.findAllMissingLeafNodes(req.body.metaDocs)
+    .then(missingRevIds => {
+      console.log('missingRevIds (SHOULD NOT BE EMPTY!):', missingRevIds);
+      res.send(missingRevIds)
+    })
+    .catch(err => console.log("_missing_rev_ids route error:", err));
 });
 
 router.post('/_insert_docs', (req, res) => {
