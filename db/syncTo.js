@@ -24,7 +24,6 @@ class SyncTo {
   getHighestTortoiseKey() {
     return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
       .then(key => {
-        //console.log('max key:', key[0]._id.toString());
         this.highestTortoiseKey = key[0]._id.toString();
       });
   }
@@ -101,7 +100,6 @@ class SyncTo {
   }
 
   updateSyncToTurtleDoc() {
-    console.log(this.newSyncToTurtleDoc);
     return mongoShell.command(mongoShell._syncToStore, "UPDATE", this.newSyncToTurtleDoc);
   }
 }

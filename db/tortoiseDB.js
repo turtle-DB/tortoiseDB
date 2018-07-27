@@ -24,7 +24,7 @@ class TortoiseDB {
       let _rev = '1-' + md5(JSON.stringify(newDoc));
       newDoc._id_rev = _id + '::' + _rev;
 
-      let metaDoc = { _id: _id, revisions: [_rev] };
+      let metaDoc = { _id: _id, _revisions: [_rev] };
 
       promises.push(mongoShell.command(mongoShell._store, "CREATE", newDoc));
       promises.push(mongoShell.command(mongoShell._meta, "CREATE", metaDoc));
