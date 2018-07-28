@@ -10,7 +10,9 @@ router.post('/_changed_meta_docs', (req, res) => {
 
   // Then begin replication process
   tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
-    .then(changedTortoiseMetaDocs => res.send(changedTortoiseMetaDocs))
+    .then(changedTortoiseMetaDocs => {
+      res.send(changedTortoiseMetaDocs);
+    })
     .catch(err => console.log(err))
 });
 

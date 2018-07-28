@@ -1,7 +1,6 @@
 const { mongoShell } = require('./mongoShell');
 
 class SyncFrom {
-
   getLastTortoiseKey(req) {
     const turtleID = req._id;
 
@@ -38,11 +37,11 @@ class SyncFrom {
       return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
         .then(tortoiseMetaDocArr => {
           let tortoiseMetaDoc = tortoiseMetaDocArr[0];
+
           if (tortoiseMetaDoc) {
             const newMetaDoc = this.createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc);
             return this.findMissingLeafNodesOfDoc(newMetaDoc)
               .then(idRevs => {
-                console.log('findMissingLeafNodes RESULT:', idRevs);
                 missingLeafNodes.push(...idRevs);
                 // update existing metaDoc
                 return mongoShell.command(mongoShell._meta, "UPDATE", newMetaDoc);
@@ -67,6 +66,7 @@ class SyncFrom {
       _id: tortoiseMetaDoc._id,
       _revisions: mergedRevTree,
       _winningRev: this.getWinningRev(mergedRevTree),
+      _leafRevs: this.collectLeafRevs(mergedRevTree)
     };
   }
 
@@ -108,8 +108,7 @@ class SyncFrom {
   }
 
   getWinningRev(node) {
-    const leafRevs = [];
-    this.collectLeafRevs(node, leafRevs);
+    const leafRevs = this.collectLeafRevs(node);
 
     return leafRevs.sort((a, b) => {
       let [revNumA, revHashA] = a.split('-');
@@ -131,21 +130,20 @@ class SyncFrom {
     })[0];
   }
 
-  collectLeafRevs(node, leafRevs) {
+  collectLeafRevs(node, leafRevs = []) {
     if (node[2].length === 0 && !node[1]._deleted) {
-      leafRevs.push(node[0]);
-      return;
+      return leafRevs.push(node[0]);
     }
 
     for (let i = 0; i < node[2].length; i++) {
       this.collectLeafRevs(node[2][i], leafRevs);
     }
+
+    return leafRevs;
   }
 
   findMissingLeafNodesOfDoc(metaDoc) {
-    const leafRevs = [];
-    this.collectLeafRevs(metaDoc._revisions, leafRevs);
-
+    const leafRevs = this.collectLeafRevs(metaDoc._revisions);
     const docId = metaDoc._id;
     const leafIdRevs = leafRevs.map(rev => docId + '::' + rev);
 

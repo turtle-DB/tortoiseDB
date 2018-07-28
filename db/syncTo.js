@@ -15,7 +15,9 @@ class SyncTo {
         return Promise.reject("No sync needed.")
       } else {
         return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
-          .then(docs => this.getUniqueIDs(docs))
+          .then(docs => {
+            return this.getUniqueIDs(docs);
+          })
           .then(ids => this.getMetaDocsByIDs(ids))
       }
     })
