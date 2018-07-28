@@ -34,7 +34,7 @@ class SyncFrom {
 
 
   findAllMissingLeafNodes(turtleMetaDocs) {
-    // returns a list of all non-deleted turtle leaf nodes that tortoise doesn't have
+    // returns a list of all turtle leaf nodes that tortoise doesn't have
     const missingLeafNodes = [];
 
     const promises = turtleMetaDocs.map(turtleMetaDoc => {
@@ -54,9 +54,12 @@ class SyncFrom {
                 return mongoShell.command(mongoShell._meta, "UPDATE", newMetaDoc);
               });
           } else {
-            missingLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
-            // insert turtleMetaDoc
-            return mongoShell.command(mongoShell._meta, "CREATE", turtleMetaDoc);
+            // if we recieve a document with one branch that has been deleted, ignore it
+            if (turtleMetaDoc._winningRev) {
+              missingLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
+              // insert turtleMetaDoc
+              return mongoShell.command(mongoShell._meta, "CREATE", turtleMetaDoc);
+            }
           }
         })
     });
@@ -76,7 +79,7 @@ class SyncFrom {
       _id: tortoiseMetaDoc._id,
       _revisions: mergedRevTree,
       _winningRev: this.getWinningRev(mergedRevTree),
-      _leafRevs: this.collectLeafRevs(mergedRevTree)
+      _leafRevs: this.collectActiveLeafRevs(mergedRevTree)
     };
   }
 
@@ -124,7 +127,7 @@ class SyncFrom {
   }
 
   getWinningRev(node) {
-    const leafRevs = this.collectLeafRevs(node);
+    const leafRevs = this.collectActiveLeafRevs(node);
 
     return leafRevs.sort((a, b) => {
       let [revNumA, revHashA] = a.split('-');
@@ -146,20 +149,32 @@ class SyncFrom {
     })[0];
   }
 
-  collectLeafRevs(node, leafRevs = []) {
+  collectActiveLeafRevs(node, leafRevs = []) {
     if (node[2].length === 0 && !node[1]._deleted) {
       return leafRevs.push(node[0]);
     }
 
     for (let i = 0; i < node[2].length; i++) {
-      this.collectLeafRevs(node[2][i], leafRevs);
+      this.collectActiveLeafRevs(node[2][i], leafRevs);
+    }
+
+    return leafRevs;
+  }
+
+  collectAllLeafRevs(node, leafRevs = []) {
+    if (node[2].length === 0) {
+      return leafRevs.push(node[0]);
+    }
+
+    for (let i = 0; i < node[2].length; i++) {
+      this.collectAllLeafRevs(node[2][i], leafRevs);
     }
 
     return leafRevs;
   }
 
   findMissingLeafNodesOfDoc(metaDoc) {
-    const leafRevs = this.collectLeafRevs(metaDoc._revisions);
+    const leafRevs = this.collectAllLeafRevs(metaDoc._revisions);
     const docId = metaDoc._id;
     const leafIdRevs = leafRevs.map(rev => docId + '::' + rev);
 
