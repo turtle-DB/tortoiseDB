@@ -20,8 +20,12 @@ class SyncFrom {
   }
 
   insertNewDocsIntoStore(docs) {
-    if (docs.length === 0) { throw new Error('Docs sent over from turtle are empty!'); }
-    return mongoShell.command(mongoShell._store, "CREATE_MANY", docs)
+    if (docs.length === 0) {
+      console.log('FYI: No docs were sent over from turtle to insert.');
+      return Promise.resolve();
+    } else {
+      return mongoShell.command(mongoShell._store, "CREATE_MANY", docs);
+    }
   }
 
   updateSyncFromTurtleDoc(newSyncFromTurtleDoc) {
@@ -37,11 +41,14 @@ class SyncFrom {
       return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
         .then(tortoiseMetaDocArr => {
           let tortoiseMetaDoc = tortoiseMetaDocArr[0];
+          console.log('tortoise metadoc 111', tortoiseMetaDoc);
 
           if (tortoiseMetaDoc) {
             const newMetaDoc = this.createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc);
+            console.log('new metadoc after merge', newMetaDoc);
             return this.findMissingLeafNodesOfDoc(newMetaDoc)
               .then(idRevs => {
+                console.log('leaf nodes that are missing from tortoise', idRevs);
                 missingLeafNodes.push(...idRevs);
                 // update existing metaDoc
                 return mongoShell.command(mongoShell._meta, "UPDATE", newMetaDoc);
@@ -60,7 +67,10 @@ class SyncFrom {
   createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc) {
     const tortoiseRevTree = tortoiseMetaDoc._revisions;
     const turtleRevTree = turtleMetaDoc._revisions;
+    console.log('tortoiseRevTree', JSON.stringify(tortoiseRevTree, undefined, 2));
+    console.log('turtleRevTree', JSON.stringify(turtleRevTree, undefined, 2));
     const mergedRevTree = this.mergeRevTrees(tortoiseRevTree, turtleRevTree);
+    console.log('mergedRevTree', JSON.stringify(mergedRevTree, undefined, 2));
 
     return {
       _id: tortoiseMetaDoc._id,
@@ -79,7 +89,12 @@ class SyncFrom {
     if (commonNodes) {
       const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
       node1[2] = [...node1Children, ...node2ChildrenDiffs];
-      this.mergeRevTrees(commonNodes[0], commonNodes[1]);
+
+      for (let i = 0; i < commonNodes.length; i++) {
+        let commonNodesPair = commonNodes[i];
+        this.mergeRevTrees(commonNodesPair[0], commonNodesPair[1]);
+      }
+
     } else {
       // fork
       node1[2] = [...node1Children, ...node2Children];
@@ -89,17 +104,18 @@ class SyncFrom {
   }
 
   findCommonNodes(node1Children, node2Children) {
+    let commonNodes = [];
     for (let i = 0; i < node1Children.length; i++) {
       let node1Child = node1Children[i];
       for (let j = 0; j < node2Children.length; j++) {
         let node2Child = node2Children[j];
         if (node2Child[0] === node1Child[0]) {
-          return [node1Child, node2Child];
+          commonNodes.push([node1Child, node2Child]);
         }
       }
     }
 
-    return null;
+    return commonNodes.length === 0 ? null : commonNodes;
   }
 
   getNode2ChildrenDiffs(node1Children, node2Children) {
