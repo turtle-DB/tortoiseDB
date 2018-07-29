@@ -3,18 +3,34 @@ const { mongoShell } = require('./mongoShell');
 class SyncFrom {
   getLastTortoiseKey(req) {
     const turtleID = req._id;
+    const turtleSyncToLatestHistory = req.history[0];
 
     return mongoShell.command(mongoShell._syncFromStore, "READ", { _id: turtleID })
-    .then(syncFromTurtleDocs => {
-      if (syncFromTurtleDocs.length === 0) {
-        return this.createSyncFromTurtleDoc(turtleID).then(() => 0);
+    .then(tortoiseSyncFromDocs => {
+      const tortoiseSyncFromDoc = tortoiseSyncFromDocs[0];
+
+      // If sync from doc already exists
+      if (tortoiseSyncFromDoc) {
+        const tortoiseSyncFromLatestHistory = tortoiseSyncFromDoc.history[0];
+
+        // If doc exists but history never created for some reason
+        if (!tortoiseSyncFromLatestHistory) {
+          return 0;
+        } else {
+          // If last keys don't match, just start from 0
+          if (tortoiseSyncFromLatestHistory.lastKey !== turtleSyncToLatestHistory.lastKey) {
+            return 0;
+          } else {
+            return tortoiseSyncFromLatestHistory.lastKey;
+          }
+        }
       } else {
-        return syncFromTurtleDocs[0].history[0].lastKey;
+        return this.createSyncFromDoc(turtleID).then(() => 0);
       }
     })
   }
 
-  createSyncFromTurtleDoc(turtleID) {
+  createSyncFromDoc(turtleID) {
     const newHistory = { _id: turtleID, history: [] };
     return mongoShell.command(mongoShell._syncFromStore, "CREATE", newHistory)
   }
@@ -41,14 +57,14 @@ class SyncFrom {
       return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
         .then(tortoiseMetaDocArr => {
           let tortoiseMetaDoc = tortoiseMetaDocArr[0];
-          console.log('tortoise metadoc 111', tortoiseMetaDoc);
+          console.log('tortoise metadoc:', tortoiseMetaDoc);
 
           if (tortoiseMetaDoc) {
             const newMetaDoc = this.createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc);
-            console.log('new metadoc after merge', newMetaDoc);
+            console.log('new metadoc after merge:', newMetaDoc);
             return this.findMissingLeafNodesOfDoc(newMetaDoc)
               .then(idRevs => {
-                console.log('leaf nodes that are missing from tortoise', idRevs);
+                console.log('leaf nodes that are missing from tortoise:', idRevs);
                 missingLeafNodes.push(...idRevs);
                 // update existing metaDoc
                 return mongoShell.command(mongoShell._meta, "UPDATE", newMetaDoc);
@@ -64,16 +80,18 @@ class SyncFrom {
         })
     });
 
-    return Promise.all(promises).then(() => missingLeafNodes);
+    return Promise.all(promises).then(() => {
+      return missingLeafNodes;
+    });
   }
 
   createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc) {
     const tortoiseRevTree = tortoiseMetaDoc._revisions;
     const turtleRevTree = turtleMetaDoc._revisions;
-    console.log('tortoiseRevTree', JSON.stringify(tortoiseRevTree, undefined, 2));
-    console.log('turtleRevTree', JSON.stringify(turtleRevTree, undefined, 2));
+    // console.log('tortoiseRevTree', JSON.stringify(tortoiseRevTree, undefined, 2));
+    // console.log('turtleRevTree', JSON.stringify(turtleRevTree, undefined, 2));
     const mergedRevTree = this.mergeRevTrees(tortoiseRevTree, turtleRevTree);
-    console.log('mergedRevTree', JSON.stringify(mergedRevTree, undefined, 2));
+    // console.log('mergedRevTree', JSON.stringify(mergedRevTree, undefined, 2));
 
     return {
       _id: tortoiseMetaDoc._id,
@@ -90,6 +108,7 @@ class SyncFrom {
     const commonNodes = this.findCommonNodes(node1Children, node2Children);
 
     if (commonNodes) {
+      // append different nodes in node2 to node1's children subarray
       const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
       node1[2] = [...node1Children, ...node2ChildrenDiffs];
 
@@ -151,7 +170,7 @@ class SyncFrom {
 
   collectActiveLeafRevs(node, leafRevs = []) {
     if (node[2].length === 0 && !node[1]._deleted) {
-      return leafRevs.push(node[0]);
+      leafRevs.push(node[0]);
     }
 
     for (let i = 0; i < node[2].length; i++) {
@@ -163,7 +182,7 @@ class SyncFrom {
 
   collectAllLeafRevs(node, leafRevs = []) {
     if (node[2].length === 0) {
-      return leafRevs.push(node[0]);
+      leafRevs.push(node[0]);
     }
 
     for (let i = 0; i < node[2].length; i++) {
