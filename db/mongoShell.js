@@ -89,6 +89,11 @@ class MongoShell {
         console.log(`${action} error:`, err)
       })
   }
+
+  getStoreDocsByIdRevs(idRevs) {
+    return this.command(this._store, 'READ', { _id_rev: {$in: idRevs} });
+  }
+
   // METASTORE OPERATIONS
 
   getMetaDocsByIds(ids) {

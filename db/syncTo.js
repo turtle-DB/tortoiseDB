@@ -15,7 +15,10 @@ class SyncTo {
         return Promise.reject("No sync needed.")
       } else {
         return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
-          .then(docs => this.getUniqueIDs(docs))
+          .then(docs => {
+            console.log('changed docs in tortoise:', docs);
+            return this.getUniqueIDs(docs);
+          })
           .then(ids => this.getMetaDocsByIDs(ids))
       }
     })
@@ -24,7 +27,6 @@ class SyncTo {
   getHighestTortoiseKey() {
     return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
       .then(key => {
-        //console.log('max key:', key[0]._id.toString());
         this.highestTortoiseKey = key[0]._id.toString();
       });
   }
@@ -101,7 +103,6 @@ class SyncTo {
   }
 
   updateSyncToTurtleDoc() {
-    console.log(this.newSyncToTurtleDoc);
     return mongoShell.command(mongoShell._syncToStore, "UPDATE", this.newSyncToTurtleDoc);
   }
 }

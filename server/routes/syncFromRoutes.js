@@ -6,6 +6,9 @@ const { tortoiseDB } = require('../../db/tortoiseDB');
 router.post('/_last_tortoise_key', (req, res) => {
   // Initialize new replicateFrom object
   tortoiseDB.syncFrom();
+  console.log('');
+  console.log('------- NEW SYNC FROM SESSION ------');
+  console.log('');
 
   // Then begin replication process
   tortoiseDB.syncFromSession.getLastTortoiseKey(req.body)
@@ -16,9 +19,11 @@ router.post('/_last_tortoise_key', (req, res) => {
 });
 
 router.post('/_missing_rev_ids', (req, res) => {
-  tortoiseDB.syncFromSession.findMissingRevIds(req.body.metaDocs)
-    .then(missingRevIds => res.send(missingRevIds))
-    .catch(err => console.log("_missing_rev_ids error:", err));
+  tortoiseDB.syncFromSession.findAllMissingLeafNodes(req.body.metaDocs)
+    .then(missingRevIds => {
+      res.send(missingRevIds)
+    })
+    .catch(err => console.log("_missing_rev_ids route error:", err));
 });
 
 router.post('/_insert_docs', (req, res) => {
