@@ -7,6 +7,9 @@ const { tortoiseDB } = require('../../db/tortoiseDB');
 router.post('/_changed_meta_docs', (req, res) => {
   // Initialize new syncTo object
   tortoiseDB.syncTo();
+  console.log('');
+  console.log('------- NEW SYNC TO SESSION ------');
+  console.log('');
 
   // Then begin replication process
   tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
