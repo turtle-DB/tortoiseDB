@@ -1,5 +1,8 @@
 const { mongoShell } = require('./mongoShell');
 
+const debug = require('debug');
+var log = debug('tortoiseDB:merge');
+
 class SyncFrom {
   getLastTortoiseKey(req) {
     const turtleID = req._id;
@@ -50,6 +53,7 @@ class SyncFrom {
 
 
   findAllMissingLeafNodes(turtleMetaDocs) {
+    log(`\n\t --- Begin revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
     // returns a list of all turtle leaf nodes that tortoise doesn't have
     const missingLeafNodes = [];
 
@@ -57,7 +61,7 @@ class SyncFrom {
       return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
         .then(tortoiseMetaDocArr => {
           let tortoiseMetaDoc = tortoiseMetaDocArr[0];
-          console.log('tortoise metadoc:', tortoiseMetaDoc);
+          //console.log('tortoise metadoc:', tortoiseMetaDoc);
 
           if (tortoiseMetaDoc) {
             const newMetaDoc = this.createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc);
@@ -81,6 +85,7 @@ class SyncFrom {
     });
 
     return Promise.all(promises).then(() => {
+      log(`\n\t --- Complete revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
       return missingLeafNodes;
     });
   }

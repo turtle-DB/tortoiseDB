@@ -16,7 +16,7 @@ class SyncTo {
       } else {
         return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
           .then(docs => {
-            console.log('changed docs in tortoise:', docs);
+            //console.log('changed docs in tortoise:', docs);
             return this.getUniqueIDs(docs);
           })
           .then(ids => this.getMetaDocsByIDs(ids))
