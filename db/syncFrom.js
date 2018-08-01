@@ -89,7 +89,7 @@ class SyncFrom {
     this.dummyNewRevisionTrees(metaDocPairs);
     log(`\n\t\t Merge revision trees`);
     this.dummyNewMetaDocs(metaDocPairs);
-    log(`\n\t\t Create new metadocs with new winning and active leaf docs`);
+    log(`\n\t\t Use new tree to update _winningRev, activeLeaf properties; create new metadocs`);
     return metaDocPairs;
   }
 
