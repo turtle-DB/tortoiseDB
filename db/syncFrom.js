@@ -53,10 +53,18 @@ class SyncFrom {
 
 
   dummyFindAllMissingLeafNodes(turtleMetaDocs) {
+    log(`\n\t --- Begin revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
     return this.createMetaDocPairs(turtleMetaDocs)
-    .then((metaDocPairs) => this.dummyCreateNewMetaDocs(metaDocPairs))
-    .then((metaDocTrios) => this.dummyFindMissingLeafNodes(metaDocTrios))
+    .then((metaDocPairs) => {
+      log(`\n\t\t Get all matching tortoise metadocs from Mongo`);
+      return this.dummyCreateNewMetaDocs(metaDocPairs)
+    })
+    .then((metaDocTrios) => {
+      return this.dummyFindMissingLeafNodes(metaDocTrios)
+    })
     .then((missingLeafNodes) => {
+      log(`\n\t\t Make a list of leaf nodes that Tortoise is missing`);
+      log(`\n\t --- Complete revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
       return missingLeafNodes;
     });
   }
@@ -79,7 +87,9 @@ class SyncFrom {
 
   dummyCreateNewMetaDocs(metaDocPairs) {
     this.dummyNewRevisionTrees(metaDocPairs);
+    log(`\n\t\t Merge revision trees`);
     this.dummyNewMetaDocs(metaDocPairs);
+    log(`\n\t\t Create new metadocs with new winning and active leaf docs`);
     return metaDocPairs;
   }
 
