@@ -27,7 +27,11 @@ class SyncTo {
   getHighestTortoiseKey() {
     return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
       .then(key => {
-        this.highestTortoiseKey = key[0]._id.toString();
+        if (key.length === 0) {
+          this.highestTortoiseKey = '0';
+        } else {
+          this.highestTortoiseKey = key[0]._id.toString();
+        }
       });
   }
 
