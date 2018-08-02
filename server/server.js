@@ -16,11 +16,9 @@ app.use((req, res, next) => {
 app.use('/', syncToRoutes);
 app.use('/', syncFromRoutes);
 
-// Generate Tortoise Dummy Data
-app.get("/generate/:numDocs", (req, res) => {
-  tortoiseDB.generateDummyData(req.params.numDocs)
-    .then(result => res.send(result))
-    .catch(err => console.log('/generate error:', err));
+// Check connection
+app.get("/connect", (req, res) => {
+  res.status(200).send();
 })
 
 //Node env object's production port or local 3000
