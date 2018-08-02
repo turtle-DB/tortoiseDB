@@ -1,5 +1,9 @@
 const { mongoShell } = require('./mongoShell');
 
+const debug = require('debug');
+var log = debug('tortoiseDB:syncTo');
+var logTo = debug('tortoiseDB:syncToSummary');
+
 class SyncTo {
   constructor() {
     this.sessionID = new Date().toISOString();
@@ -12,7 +16,9 @@ class SyncTo {
     return this.getHighestTortoiseKey() // this.highestTortoiseKey
     .then(() => {
       if (this.lastTurtleKey === this.highestTortoiseKey) {
-        return Promise.reject("No sync needed.")
+        log('\n #1 No sync needed - last key and highest key are equal');
+        logTo('\n ------- Tortoise ==> Turtle sync complete ------');
+        return [];
       } else {
         return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
           .then(docs => {
