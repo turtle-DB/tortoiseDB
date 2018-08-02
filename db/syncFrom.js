@@ -231,18 +231,12 @@ class SyncFrom {
   }
 
   insertUpdatedMetaDocs() {
-    return new Promise((resolve, reject) => {
-      if (this.updatedMetaDocs.length > 0) {
-        return mongoShell.command(mongoShell._meta, "UPDATE_MANY", this.updatedMetaDocs);
-      } else {
-        resolve();
-      }
+    return Promise.resolve().then(() => {
+      return mongoShell.updateManyMetaDocs(this.updatedMetaDocs);
     })
     .then(() => {
       if (this.newTurtleMetaDocs.length > 0) {
         return mongoShell.command(mongoShell._meta, "CREATE_MANY", this.newTurtleMetaDocs);
-      } else {
-        resolve();
       }
     })
   }

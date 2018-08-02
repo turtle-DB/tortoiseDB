@@ -76,9 +76,11 @@ class MongoShell {
         } else if (action === "UPDATE") {
           return collection.update({ _id: query._id }, query, {upsert: true});
         } else if (action === "UPDATE_MANY") {
-          query.forEach(doc => {
-            collection.update({ _id: doc._id }, doc, {upsert: true});
-          });
+          // let result = Promise.resolve();
+          // query.forEach(doc => {
+          //   result = result.then(() => collection.update({ _id: doc._id }, doc, {upsert: true}));
+          // });
+          // return result;
        }})
       .then(res => {
         this._client.close();
@@ -88,6 +90,15 @@ class MongoShell {
         this._client.close();
         console.log(`${action} error:`, err)
       })
+  }
+
+  updateManyMetaDocs(docs) {
+    let result = Promise.resolve();
+    docs.forEach(doc => {
+      result = result.then(() => this.command(mongoShell._meta, "UPDATE", doc));
+    });
+
+    return result;
   }
 
   getStoreDocsByIdRevs(idRevs) {
