@@ -36,7 +36,8 @@ router.post('/_missing_rev_ids', (req, res) => {
 
 router.post('/_insert_docs', (req, res) => {
   log('\n #5 HTTP POST request <== Turtle with missing records and updated sync history');
-  tortoiseDB.syncFromSession.insertNewDocsIntoStore(req.body.docs)
+  tortoiseDB.syncFromSession.insertUpdatedMetaDocs()
+  .then(() => tortoiseDB.syncFromSession.insertNewDocsIntoStore(req.body.docs))
   .then(() => log('\n Insert missing records into MongoDB'))
   .then(() => tortoiseDB.syncFromSession.updateSyncFromTurtleDoc(req.body.newSyncToTortoiseDoc))
   .then(() => log('\n Update sync history doc'))

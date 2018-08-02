@@ -70,19 +70,34 @@ class SyncFrom {
   }
 
   createMetaDocPairs(turtleMetaDocs) {
+    log(`\n\t\t Begin searching for matching metadocs...`);
     let metaDocPairs = {};
 
-    const metadocPairPromises = turtleMetaDocs.map(turtleMetaDoc => {
-      return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
-      .then(tortoiseMetaDocArr => {
-        let tortoiseMetaDoc = tortoiseMetaDocArr[0];
-        metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': tortoiseMetaDoc };
+    const turtleMetaDocIds = turtleMetaDocs.map(turtleMetaDoc => turtleMetaDoc._id);
+    return mongoShell.getMetaDocsByIds(turtleMetaDocIds)
+    .then(tortoiseMetaDocs => {
+      turtleMetaDocs.forEach(turtleMetaDoc => {
+        metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': null };
       })
-    });
 
-    return Promise.all(metadocPairPromises).then(() => {
+      tortoiseMetaDocs.forEach(tortoiseMetaDoc => {
+        metaDocPairs[tortoiseMetaDoc._id]['tortoise'] = tortoiseMetaDoc;
+      })
+
       return metaDocPairs;
-    });
+    })
+
+    // const metadocPairPromises = turtleMetaDocs.map(turtleMetaDoc => {
+    //   return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
+    //   .then(tortoiseMetaDocArr => {
+    //     let tortoiseMetaDoc = tortoiseMetaDocArr[0];
+    //     metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': tortoiseMetaDoc };
+    //   })
+    // });
+    //
+    // return Promise.all(metadocPairPromises).then(() => {
+    //   return metaDocPairs;
+    // });
   }
 
   createNewMetaDocs(metaDocPairs) {
@@ -197,8 +212,8 @@ class SyncFrom {
 
   findMissingLeafNodes(metaDocTrios) {
     let missingLeafNodes = [];
-    let updatedMetaDocs = [];
-    let newTurtleMetaDocs = [];
+    this.updatedMetaDocs = [];
+    this.newTurtleMetaDocs = [];
 
     let dummymissingLeafNodes = [];
     let allLeafNodes = this.collectAllLeafIdRevs(metaDocTrios);
@@ -210,19 +225,26 @@ class SyncFrom {
       dummymissingLeafNodes = dummymissingLeafNodes.concat(remainingTurtleLeafNodes);
     })
     .then(() => {
-      [updatedMetaDocs, newTurtleMetaDocs] = this.sortMetaDocsForSave(metaDocTrios);
-    })
-    .then(() => {
-      if (updatedMetaDocs.length > 0) {
-        return mongoShell.command(mongoShell._meta, "UPDATE_MANY", updatedMetaDocs);
-      }
-    })
-    .then(() => {
-      if (newTurtleMetaDocs.length > 0) {
-        return mongoShell.command(mongoShell._meta, "CREATE_MANY", newTurtleMetaDocs);
-      }
+      [this.updatedMetaDocs, this.newTurtleMetaDocs] = this.sortMetaDocsForSave(metaDocTrios);
     })
     .then(() => dummymissingLeafNodes)
+  }
+
+  insertUpdatedMetaDocs() {
+    return new Promise((resolve, reject) => {
+      if (this.updatedMetaDocs.length > 0) {
+        return mongoShell.command(mongoShell._meta, "UPDATE_MANY", this.updatedMetaDocs);
+      } else {
+        resolve();
+      }
+    })
+    .then(() => {
+      if (this.newTurtleMetaDocs.length > 0) {
+        return mongoShell.command(mongoShell._meta, "CREATE_MANY", this.newTurtleMetaDocs);
+      } else {
+        resolve();
+      }
+    })
   }
 
   // findMissingLeafNodes(metaDocTrios) {
