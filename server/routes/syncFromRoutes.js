@@ -25,7 +25,7 @@ router.post('/_last_tortoise_key', (req, res) => {
 
 router.post('/_missing_rev_ids', (req, res) => {
   log(`\n #3 HTTP POST request <== Turtle with (${req.body.metaDocs.length}) changed revision trees`);
-  tortoiseDB.syncFromSession.dummyFindAllMissingLeafNodes(req.body.metaDocs)
+  tortoiseDB.syncFromSession.findAllMissingLeafNodes(req.body.metaDocs)
     .then(missingRevIds => {
       //log('\n Merge revision trees and list all missing records');
       log(`\n #4 HTTP response ==> Turtle requesting (${missingRevIds.length}) missing records`);
