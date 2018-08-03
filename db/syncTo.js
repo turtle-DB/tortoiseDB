@@ -4,7 +4,7 @@ const debug = require('debug');
 var log = debug('tortoiseDB:syncTo');
 var logTo = debug('tortoiseDB:syncToSummary');
 
-const STORE_BATCH_LIMIT = 5;
+const BATCH_LIMIT = 5;
 
 class SyncTo {
   constructor() {
@@ -38,14 +38,10 @@ class SyncTo {
       if (keys.length === 0) {
         this.highestTortoiseKey = '0';
       }
-      //
-      // if (this.lastTurtleKey === '0') { //If Turtle asks for everything, need this to control batches
-      //   this.lastTurtleKey = keys[0];
-      // }
 
-      if (keys.length > STORE_BATCH_LIMIT) {
+      if (keys.length > BATCH_LIMIT) {
         console.log('all keys', keys);
-        this.highestTortoiseKey = keys[STORE_BATCH_LIMIT - 1];
+        this.highestTortoiseKey = keys[BATCH_LIMIT - 1];
         console.log('highest tortoise now', this.highestTortoiseKey);
       } else {
         this.highestTortoiseKey = keys[keys.length - 1];
@@ -79,7 +75,6 @@ class SyncTo {
       console.log('max', highestTortoiseKey);
       return mongoShell.command(mongoShell._store, "READ_BETWEEN", { min: lastTurtleKey, max: highestTortoiseKey });
     } else {
-      //return mongoShell.command(mongoShell._store, "READ_ALL", {}); //should not happen ever
       return mongoShell.command(mongoShell._store, "READ_UP_TO", { max: highestTortoiseKey });
     }
   }

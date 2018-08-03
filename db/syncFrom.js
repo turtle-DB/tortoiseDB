@@ -5,28 +5,18 @@ var log = debug('tortoiseDB:merge');
 
 class SyncFrom {
 
-  constructor() {
-    this.currentBatch = [];
-  }
-
-  saveStoreBatch(docs) {
-    this.currentBatch = this.currentBatch.concat(docs);
-  }
-
-  insertNewDocsIntoStore() {
-    if (this.currentBatch === 0) {
+  insertNewDocsIntoStore(docs) {
+    if (docs.length === 0) {
       console.log('FYI: No docs were sent over from turtle to insert.');
       return Promise.resolve();
     } else {
-      return mongoShell.command(mongoShell._store, "CREATE_MANY", this.currentBatch)
-      .then(() => this.currentBatch = []);
+      return mongoShell.command(mongoShell._store, "CREATE_MANY", docs);
     }
   }
 
   updateSyncFromTurtleDoc(newSyncFromTurtleDoc) {
     return mongoShell.command(mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
   }
-
 
   findAllMissingLeafNodes(turtleMetaDocs) {
     log(`\n\t --- Begin revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
@@ -62,18 +52,6 @@ class SyncFrom {
 
       return metaDocPairs;
     })
-
-    // const metadocPairPromises = turtleMetaDocs.map(turtleMetaDoc => {
-    //   return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
-    //   .then(tortoiseMetaDocArr => {
-    //     let tortoiseMetaDoc = tortoiseMetaDocArr[0];
-    //     metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': tortoiseMetaDoc };
-    //   })
-    // });
-    //
-    // return Promise.all(metadocPairPromises).then(() => {
-    //   return metaDocPairs;
-    // });
   }
 
   createNewMetaDocs(metaDocPairs) {
@@ -216,93 +194,6 @@ class SyncFrom {
       }
     })
   }
-
-  // findMissingLeafNodes(metaDocTrios) {
-    // let docIDs = Object.keys(metaDocTrios);
-    //
-    // let missingLeafNodes = [];
-    // const metadocTrioPromises = docIDs.map(id => {
-    //   let metaDocTrio = metaDocTrios[id];
-    //   let newMetaDoc = metaDocTrio.new;
-    //   if (metaDocTrio.tortoise) {
-    //     return this.findMissingLeafNodesOfDoc(newMetaDoc)
-    //       .then(idRevs => {
-    //         //console.log('leaf nodes that are missing from tortoise:', idRevs);
-    //         missingLeafNodes.push(...idRevs);
-    //         // update existing metaDoc
-    //         return mongoShell.command(mongoShell._meta, "UPDATE", newMetaDoc);
-    //       });
-    //   } else {
-    //     let turtleMetaDoc = metaDocTrio.turtle;
-    //     // if we recieve a document with one branch that has been deleted, ignore it
-    //     if (turtleMetaDoc._winningRev) {
-    //       missingLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
-    //       // insert turtleMetaDoc
-    //       return mongoShell.command(mongoShell._meta, "CREATE", turtleMetaDoc);
-    //     }
-    //   }
-    // });
-    //
-    // return Promise.all(metadocTrioPromises).then(() => {
-    //   return missingLeafNodes;
-    // });
-  // }
-
-
-
-  // findAllMissingLeafNodes(turtleMetaDocs) {
-  //   log(`\n\t --- Begin revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
-  //   // returns a list of all turtle leaf nodes that tortoise doesn't have
-  //   const missingLeafNodes = [];
-  //
-  //   const promises = turtleMetaDocs.map(turtleMetaDoc => {
-  //     return mongoShell.command(mongoShell._meta, "READ", { _id: turtleMetaDoc._id })
-  //       .then(tortoiseMetaDocArr => {
-  //         let tortoiseMetaDoc = tortoiseMetaDocArr[0];
-  //         //console.log('tortoise metadoc:', tortoiseMetaDoc);
-  //
-  //         if (tortoiseMetaDoc) {
-  //           const newMetaDoc = this.createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc);
-  //           //console.log('new metadoc after merge:', newMetaDoc);
-  //           return this.findMissingLeafNodesOfDoc(newMetaDoc)
-  //             .then(idRevs => {
-  //               //console.log('leaf nodes that are missing from tortoise:', idRevs);
-  //               missingLeafNodes.push(...idRevs);
-  //               // update existing metaDoc
-  //               return mongoShell.command(mongoShell._meta, "UPDATE", newMetaDoc);
-  //             });
-  //         } else {
-  //           // if we recieve a document with one branch that has been deleted, ignore it
-  //           if (turtleMetaDoc._winningRev) {
-  //             missingLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
-  //             // insert turtleMetaDoc
-  //             return mongoShell.command(mongoShell._meta, "CREATE", turtleMetaDoc);
-  //           }
-  //         }
-  //       })
-  //   });
-  //
-  //   return Promise.all(promises).then(() => {
-  //     log(`\n\t --- Complete revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
-  //     return missingLeafNodes;
-  //   });
-  // }
-  //
-  // createNewMetaDoc(tortoiseMetaDoc, turtleMetaDoc) {
-  //   const tortoiseRevTree = tortoiseMetaDoc._revisions;
-  //   const turtleRevTree = turtleMetaDoc._revisions;
-  //   // console.log('tortoiseRevTree', JSON.stringify(tortoiseRevTree, undefined, 2));
-  //   // console.log('turtleRevTree', JSON.stringify(turtleRevTree, undefined, 2));
-  //   const mergedRevTree = this.mergeRevTrees(tortoiseRevTree, turtleRevTree);
-  //   // console.log('mergedRevTree', JSON.stringify(mergedRevTree, undefined, 2));
-  //
-  //   return {
-  //     _id: tortoiseMetaDoc._id,
-  //     _revisions: mergedRevTree,
-  //     _winningRev: this.getWinningRev(mergedRevTree),
-  //     _leafRevs: this.collectActiveLeafRevs(mergedRevTree)
-  //   };
-  // }
 
   mergeRevTrees(node1, node2) {
     const node1Children = node1[2];

@@ -44,13 +44,6 @@ class MongoShell {
       .catch(err => console.log("error:", err));
   }
 
-  // createLocalSyncHistory() {
-  //   const tortoiseID = 'tortoiseDB' + '::' + uuidv4();
-  //   const syncHistory = { history: [], _id: tortoiseID };
-  //   return this.command(this._replicationHistoryFrom, 'CREATE', syncHistory)
-  //   .catch(err => console.log(err));
-  // }
-
   // STORE OPERATIONS
   command(store, action, query, projection) {
     return this.connect()

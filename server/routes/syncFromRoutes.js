@@ -39,34 +39,14 @@ router.post('/_missing_rev_ids', (req, res) => {
 router.post('/_insert_docs', (req, res) => {
   log('\n #5 HTTP POST request <== Turtle with missing records');
 
-  if (!req.body.finishedBatch) {
-    tortoiseDB.syncFromSession.saveStoreBatch(req.body.docs);
-    res.send("Batch of store docs received");
-  } else {
     tortoiseDB.syncFromSession.insertUpdatedMetaDocs()
-    .then(() => tortoiseDB.syncFromSession.insertNewDocsIntoStore())
+    .then(() => tortoiseDB.syncFromSession.insertNewDocsIntoStore(req.body.docs))
     .then(() => log('\n Insert missing records into MongoDB'))
-    .then(() => log('\n #6 HTTP response ==> Turtle with confirmation of insert'))
+    .then(() => tortoiseDB.syncFromSession.updateSyncFromTurtleDoc(req.body.newSyncToTortoiseDoc))
+    .then(() => log('\n #6 HTTP response ==> Turtle with confirmation of insert and sync history'))
     .then(() => res.send("Complete batch inserted"))
+    .then(() => logFrom('\n ------- Turtle ==> Tortoise sync complete ------ '))
     .catch(err => console.log("_insert_docs error:", err));
-  }
-  // tortoiseDB.syncFromSession.insertUpdatedMetaDocs()
-  // .then(() => tortoiseDB.syncFromSession.insertNewDocsIntoStore(req.body.docs))
-  // .then(() => log('\n Insert missing records into MongoDB'))
-  // .then(() => tortoiseDB.syncFromSession.updateSyncFromTurtleDoc(req.body.newSyncToTortoiseDoc))
-  // .then(() => log('\n Update sync history doc'))
-  // .then(() => log('\n #6 HTTP response ==> Turtle with confirmation of complete sync'))
-  // .then(() => res.send("Insert docs received"))
-  // .then(() => logFrom('\n ------- Turtle ==> Tortoise sync complete ------ '))
-  // .catch(err => console.log("_insert_docs error:", err));
-});
-
-router.post('/_complete_sync', (req, res) => {
-  tortoiseDB.syncFromSession.updateSyncFromTurtleDoc(req.body.newSyncToTortoiseDoc)
-  .then(() => log('\n Update sync history doc'))
-  .then(() => log('\n #7 HTTP response ==> Turtle with confirmation of complete sync'))
-  .then(() => res.send("Completed sync"))
-  .then(() => logFrom('\n ------- Turtle ==> Tortoise sync complete ------ '))
 });
 
 module.exports = router;
