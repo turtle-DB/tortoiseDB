@@ -4,46 +4,22 @@ const debug = require('debug');
 var log = debug('tortoiseDB:merge');
 
 class SyncFrom {
-  getLastTortoiseKey(req) {
-    const turtleID = req._id;
-    const turtleSyncToLatestHistory = req.history[0];
 
-    return mongoShell.command(mongoShell._syncFromStore, "READ", { _id: turtleID })
-    .then(tortoiseSyncFromDocs => {
-      const tortoiseSyncFromDoc = tortoiseSyncFromDocs[0];
-
-      // If sync from doc already exists
-      if (tortoiseSyncFromDoc) {
-        const tortoiseSyncFromLatestHistory = tortoiseSyncFromDoc.history[0];
-
-        // If doc exists but history never created for some reason
-        if (!tortoiseSyncFromLatestHistory) {
-          return 0;
-        } else {
-          // If last keys don't match, just start from 0createNewMetaDoc
-          if (tortoiseSyncFromLatestHistory.lastKey !== turtleSyncToLatestHistory.lastKey) {
-            return 0;
-          } else {
-            return tortoiseSyncFromLatestHistory.lastKey;
-          }
-        }
-      } else {
-        return this.createSyncFromDoc(turtleID).then(() => 0);
-      }
-    })
+  constructor() {
+    this.currentBatch = [];
   }
 
-  createSyncFromDoc(turtleID) {
-    const newHistory = { _id: turtleID, history: [] };
-    return mongoShell.command(mongoShell._syncFromStore, "CREATE", newHistory)
+  saveStoreBatch(docs) {
+    this.currentBatch = this.currentBatch.concat(docs);
   }
 
-  insertNewDocsIntoStore(docs) {
-    if (docs.length === 0) {
+  insertNewDocsIntoStore() {
+    if (this.currentBatch === 0) {
       console.log('FYI: No docs were sent over from turtle to insert.');
       return Promise.resolve();
     } else {
-      return mongoShell.command(mongoShell._store, "CREATE_MANY", docs);
+      return mongoShell.command(mongoShell._store, "CREATE_MANY", this.currentBatch)
+      .then(() => this.currentBatch = []);
     }
   }
 
