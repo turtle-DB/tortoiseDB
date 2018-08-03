@@ -4,7 +4,7 @@ const debug = require('debug');
 var log = debug('tortoiseDB:syncTo');
 var logTo = debug('tortoiseDB:syncToSummary');
 
-const BATCH_LIMIT = 5;
+const BATCH_LIMIT = 25;
 
 class SyncTo {
   constructor() {
