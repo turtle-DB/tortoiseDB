@@ -4,6 +4,8 @@ const debug = require('debug');
 var log = debug('tortoiseDB:syncTo');
 var logTo = debug('tortoiseDB:syncToSummary');
 
+const STORE_BATCH_LIMIT = 5;
+
 class SyncTo {
   constructor() {
     this.sessionID = new Date().toISOString();
@@ -13,7 +15,7 @@ class SyncTo {
     this.turtleID = req.body.turtleID;
     this.lastTurtleKey = req.body.lastTurtleKey;
 
-    return this.getHighestTortoiseKey() // this.highestTortoiseKey
+    return this.setBatchLimits() // update this.lastTurtleKey, this.highestTortoiseKey
     .then(() => {
       if (this.lastTurtleKey === this.highestTortoiseKey) {
         log('\n #1 No sync needed - last key and highest key are equal');
@@ -22,12 +24,42 @@ class SyncTo {
       } else {
         return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
           .then(docs => {
-            //console.log('changed docs in tortoise:', docs);
+            console.log('changed docs in tortoise:', docs);
             return this.getUniqueIDs(docs);
           })
           .then(ids => this.getMetaDocsByIDs(ids))
       }
     })
+  }
+
+  setBatchLimits() {
+    return this.getKeysAboveLastTurtleKey()
+    .then(keys => {
+      if (keys.length === 0) {
+        this.highestTortoiseKey = '0';
+      }
+      //
+      // if (this.lastTurtleKey === '0') { //If Turtle asks for everything, need this to control batches
+      //   this.lastTurtleKey = keys[0];
+      // }
+
+      if (keys.length > STORE_BATCH_LIMIT) {
+        console.log('all keys', keys);
+        this.highestTortoiseKey = keys[STORE_BATCH_LIMIT - 1];
+        console.log('highest tortoise now', this.highestTortoiseKey);
+      } else {
+        this.highestTortoiseKey = keys[keys.length - 1];
+
+      }
+    });
+  }
+
+  getKeysAboveLastTurtleKey() {
+    if (this.lastTurtleKey === '0') {
+      return mongoShell.command(mongoShell._store, "GET_ALL_IDS", {})
+    } else {
+      return mongoShell.command(mongoShell._store, "GET_ALL_IDS_GREATER_THAN", { min: this.lastTurtleKey })
+    }
   }
 
   getHighestTortoiseKey() {
@@ -43,9 +75,12 @@ class SyncTo {
 
   getMetaDocsBetweenStoreKeys(lastTurtleKey, highestTortoiseKey) {
     if (lastTurtleKey !== '0') {
+      console.log('min', lastTurtleKey);
+      console.log('max', highestTortoiseKey);
       return mongoShell.command(mongoShell._store, "READ_BETWEEN", { min: lastTurtleKey, max: highestTortoiseKey });
     } else {
-      return mongoShell.command(mongoShell._store, "READ_ALL", {});
+      //return mongoShell.command(mongoShell._store, "READ_ALL", {}); //should not happen ever
+      return mongoShell.command(mongoShell._store, "READ_UP_TO", { max: highestTortoiseKey });
     }
   }
 

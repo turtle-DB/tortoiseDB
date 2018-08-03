@@ -71,8 +71,22 @@ class MongoShell {
               $lte: ObjectId(query.max)
             }
           }).toArray();
+        } else if (action === 'READ_UP_TO') {
+          return collection.find({
+            _id: {
+              $lte: ObjectId(query.max)
+            }
+          }).toArray();
         } else if (action === 'GET_MAX_ID') {
           return collection.find().sort({_id: -1}).limit(1).toArray();
+        } else if (action === 'GET_ALL_IDS') {
+          return collection.find({}, {_id: 1}).sort({_id: 1}).map(function(item){ return item._id; }).toArray();
+        } else if (action === 'GET_ALL_IDS_GREATER_THAN') {
+          return collection.find({
+            _id: {
+              $gt: ObjectId(query.min)
+            }
+          }, {_id: 1}).sort({_id: 1}).map(function(item){ return item._id; }).toArray();
         } else if (action === "UPDATE") {
           return collection.update({ _id: query._id }, query, {upsert: true});
         } else if (action === "UPDATE_MANY") {
