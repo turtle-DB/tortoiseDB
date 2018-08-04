@@ -15,7 +15,22 @@ class SyncFrom {
   }
 
   updateSyncFromTurtleDoc(newSyncFromTurtleDoc) {
-    return mongoShell.command(mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
+    return this.getHighestTortoiseKey()
+    .then(() => {
+      newSyncFromTurtleDoc.history[0].lastTortoiseKey = this.highestTortoiseKey;
+      return mongoShell.command(mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
+    })
+  }
+
+  getHighestTortoiseKey() {
+    return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
+    .then(key => {
+      if (key.length === 0) {
+        this.highestTortoiseKey = '0';
+      } else {
+        this.highestTortoiseKey = key[0]._id.toString();
+      }
+    });
   }
 
   findAllMissingLeafNodes(turtleMetaDocs) {
