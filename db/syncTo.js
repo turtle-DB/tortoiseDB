@@ -17,10 +17,11 @@ class SyncTo {
     // Again - do we even want to check if the Tortoise DB key and the Turtle DB key are the same?
     // Why not just take the key from Turtle and let Turtle store the sync doc and handle it all?
     // Doesn't even care about turtle ID? Just recieves a last key value?
+    // For example, could do:
     // const lastTurtleKey = this.getLastTurtleKey(req.body.turtleID, req.body.lastTurtleKey);
 
     const lastTurtleKey = req.body.lastTurtleKey;
-    this.getHighestTortoiseKey() // this.highestTortoiseKey
+    return this.getHighestTortoiseKey() // this.highestTortoiseKey
       .then(() => {
         if (lastTurtleKey === this.highestTortoiseKey) {
           log('\n #1 No sync needed - last key and highest key are equal');
@@ -43,7 +44,7 @@ class SyncTo {
     return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
       .then(key => {
         if (key.length === 0) {
-          this.highestTortoiseKey '0';
+          this.highestTortoiseKey = '0';
         } else {
           this.highestTortoiseKey = key[0]._id.toString();
         }
@@ -71,53 +72,51 @@ class SyncTo {
 
   getMetaDocsByIDs(ids) {
     return mongoShell.command(mongoShell._meta, "READ", { _id: { $in: ids } })
-      .then(() => this.changedTortoiseMetaDocs = metaDocs);
+      .then((metaDocs) => this.changedTortoiseMetaDocs = metaDocs);
   }
 
   sendBatchChangedMetaDocsToTurtle() {
-    let currentBatch = this.changedTurtleMetaDocs.splice(0, BATCH_LIMIT);
+    let currentBatch = this.changedTortoiseMetaDocs.splice(0, BATCH_LIMIT);
     return {
       metaDocs: currentBatch,
-      lastBatch: this.changedTurtleMetaDocs.length === 0
+      lastBatch: this.changedTortoiseMetaDocs.length === 0
     };
   }
 
   // #3 HTTP POST '/_changed_docs'
 
-
-
-
-
-
-
-
-
-
-
-
-
   getTortoiseDocsForTurtle(req) {
     const revIds = req.body.revIds;
 
-    return this.getStoreDocsForTurtle(revIds)
-      .then(docs => {
-        this.storeDocsForTurtle = docs;
-      })
+    return this.getStoreDocsForTurtle(revIds) // this.storeDocsForTurtle
       .then(() => this.createNewSyncToTurtleDoc())
-      .then(() => {
-        return {
-          docs: this.storeDocsForTurtle,
-          newSyncToTurtleDoc: this.newSyncToTurtleDoc
-        }
-      })
+      .then(() => this.sendBatchDocsToTurtle());
   }
 
   getStoreDocsForTurtle(revIds) {
-    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } }, { fields: { _id: 0 } });
+    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } }, { fields: { _id: 0 } })
+      .then(docs => this.storeDocsForTurtle = docs);
   }
 
+  sendBatchDocsToTurtle() {
+    let currentBatch = this.storeDocsForTurtle.splice(0, BATCH_LIMIT);
+    let lastBatch = this.storeDocsForTurtle.length === 0;
+    const payload = {
+      docs: currentBatch,
+      lastBatch: lastBatch
+    };
+    if (lastBatch) { payload.newSyncToTurtleDoc = this.newSyncToTurtleDoc; }
 
-  // TO CLEAN UP - Waaaay too many methods all dealing with the sync docs, some outdated...
+    return payload;
+  }
+
+  // #5 HTTP GET '/_confirm_sync'
+
+  updateSyncToTurtleDoc() {
+    return mongoShell.command(mongoShell._syncToStore, "UPDATE", this.newSyncToTurtleDoc);
+  }
+
+  // Sync To Turtle Doc Helper Methods...
 
   createNewSyncToTurtleDoc() {
     return this.getSyncToTurtleDoc()
@@ -145,44 +144,6 @@ class SyncTo {
     return mongoShell.command(mongoShell._syncToStore, "CREATE", newHistory)
       .then(() => newHistory)
       .catch(err => console.log(err));
-  }
-
-  updateSyncToTurtleDoc() {
-    return mongoShell.command(mongoShell._syncToStore, "UPDATE", this.newSyncToTurtleDoc);
-  }
-
-  getLastTortoiseKey(req) {
-    const turtleID = req._id;
-    const turtleSyncToLatestHistory = req.history[0];
-
-    return mongoShell.command(mongoShell._syncFromStore, "READ", { _id: turtleID })
-      .then(tortoiseSyncFromDocs => {
-        const tortoiseSyncFromDoc = tortoiseSyncFromDocs[0];
-
-        // If sync from doc already exists
-        if (tortoiseSyncFromDoc) {
-          const tortoiseSyncFromLatestHistory = tortoiseSyncFromDoc.history[0];
-
-          // If doc exists but history never created for some reason
-          if (!tortoiseSyncFromLatestHistory) {
-            return 0;
-          } else {
-            // If last keys don't match, just start from 0
-            if (tortoiseSyncFromLatestHistory.lastKey !== turtleSyncToLatestHistory.lastKey) {
-              return 0;
-            } else {
-              return tortoiseSyncFromLatestHistory.lastKey;
-            }
-          }
-        } else {
-          return this.createSyncFromDoc(turtleID).then(() => 0);
-        }
-      })
-  }
-
-  createSyncFromDoc(turtleID) {
-    const newHistory = { _id: turtleID, history: [] };
-    return mongoShell.command(mongoShell._syncFromStore, "CREATE", newHistory)
   }
 }
 
