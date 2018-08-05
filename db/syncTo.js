@@ -16,38 +16,35 @@ class SyncTo {
     this.lastTurtleKey = req.body.lastTurtleKey;
 
     return this.setBatchLimits() // update this.lastTurtleKey, this.highestTortoiseKey
-    .then(() => {
-      if (this.lastTurtleKey === this.highestTortoiseKey) {
-        log('\n #1 No sync needed - last key and highest key are equal');
-        logTo('\n ------- Tortoise ==> Turtle sync complete ------');
-        return [];
-      } else {
-        return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
-          .then(docs => {
-            console.log('changed docs in tortoise:', docs);
-            return this.getUniqueIDs(docs);
-          })
-          .then(ids => this.getMetaDocsByIDs(ids))
-      }
-    })
+      .then(() => {
+        if (this.lastTurtleKey === this.highestTortoiseKey) {
+          log('\n #1 No sync needed - last key and highest key are equal');
+          logTo('\n ------- Tortoise ==> Turtle sync complete ------');
+          return [];
+        } else {
+          return this.getMetaDocsBetweenStoreKeys(this.lastTurtleKey, this.highestTortoiseKey)
+            .then(docs => {
+              return this.getUniqueIDs(docs);
+            })
+            .then(ids => this.getMetaDocsByIDs(ids))
+        }
+      })
   }
 
   setBatchLimits() {
     return this.getKeysAboveLastTurtleKey()
-    .then(keys => {
-      if (keys.length === 0) {
-        this.highestTortoiseKey = '0';
-      }
+      .then(keys => {
+        if (keys.length === 0) {
+          this.highestTortoiseKey = '0';
+        }
 
-      if (keys.length > BATCH_LIMIT) {
-        console.log('all keys', keys);
-        this.highestTortoiseKey = keys[BATCH_LIMIT - 1];
-        console.log('highest tortoise now', this.highestTortoiseKey);
-      } else {
-        this.highestTortoiseKey = keys[keys.length - 1];
+        if (keys.length > BATCH_LIMIT) {
+          this.highestTortoiseKey = keys[BATCH_LIMIT - 1];
+        } else {
+          this.highestTortoiseKey = keys[keys.length - 1];
 
-      }
-    });
+        }
+      });
   }
 
   getKeysAboveLastTurtleKey() {
@@ -71,8 +68,6 @@ class SyncTo {
 
   getMetaDocsBetweenStoreKeys(lastTurtleKey, highestTortoiseKey) {
     if (lastTurtleKey !== '0') {
-      console.log('min', lastTurtleKey);
-      console.log('max', highestTortoiseKey);
       return mongoShell.command(mongoShell._store, "READ_BETWEEN", { min: lastTurtleKey, max: highestTortoiseKey });
     } else {
       return mongoShell.command(mongoShell._store, "READ_UP_TO", { max: highestTortoiseKey });
@@ -98,30 +93,30 @@ class SyncTo {
     const revIds = req.body.revIds;
 
     return this.getStoreDocsForTurtle(revIds)
-    .then(docs => {
-      this.storeDocsForTurtle = docs;
-    })
-    .then(() => this.createNewSyncToTurtleDoc())
-    .then(() => {
-      return {
-        docs: this.storeDocsForTurtle,
-        newSyncToTurtleDoc: this.newSyncToTurtleDoc
-      }
-    })
+      .then(docs => {
+        this.storeDocsForTurtle = docs;
+      })
+      .then(() => this.createNewSyncToTurtleDoc())
+      .then(() => {
+        return {
+          docs: this.storeDocsForTurtle,
+          newSyncToTurtleDoc: this.newSyncToTurtleDoc
+        }
+      })
   }
 
   getStoreDocsForTurtle(revIds) {
-    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } }, {fields: {_id: 0}});
+    return mongoShell.command(mongoShell._store, "READ", { _id_rev: { $in: revIds } }, { fields: { _id: 0 } });
   }
 
   createNewSyncToTurtleDoc() {
     return this.getSyncToTurtleDoc()
-    .then(syncToTurtleDoc => {
-      let newHistory = { lastKey: this.highestTortoiseKey, sessionID: this.sessionID };
-      this.newSyncToTurtleDoc = Object.assign(
-        syncToTurtleDoc, { history: [newHistory].concat(syncToTurtleDoc.history) }
-      );
-    })
+      .then(syncToTurtleDoc => {
+        let newHistory = { lastKey: this.highestTortoiseKey, sessionID: this.sessionID };
+        this.newSyncToTurtleDoc = Object.assign(
+          syncToTurtleDoc, { history: [newHistory].concat(syncToTurtleDoc.history) }
+        );
+      })
   }
 
   getSyncToTurtleDoc() {
@@ -138,8 +133,8 @@ class SyncTo {
   initializeSyncToTurtleDoc(turtleID) {
     const newHistory = { _id: turtleID, history: [] }
     return mongoShell.command(mongoShell._syncToStore, "CREATE", newHistory)
-    .then(() => newHistory)
-    .catch(err => console.log(err));
+      .then(() => newHistory)
+      .catch(err => console.log(err));
   }
 
   updateSyncToTurtleDoc() {

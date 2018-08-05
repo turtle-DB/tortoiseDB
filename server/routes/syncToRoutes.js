@@ -15,7 +15,7 @@ router.post('/_changed_meta_docs', (req, res) => {
   // Then begin sync process
   tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
     .then(changedTortoiseMetaDocs => {
-      log(`\n get (${changedTortoiseMetaDocs.length}) metadocs that have changed since last sync`);
+      // log(`\n getChangedMetaDocsForTurtle() - get (${changedTortoiseMetaDocs.length}) metadocs that have changed since last sync`);
       log('\n #2 HTTP response ==> Turtle with changed metadocs');
       res.send(changedTortoiseMetaDocs);
     })
@@ -25,16 +25,17 @@ router.post('/_changed_meta_docs', (req, res) => {
 router.post('/_changed_docs', (req, res) => {
   log(`\n #3 HTTP POST request <== Turtle requesting (${req.body.revIds.length}) missing records`);
   tortoiseDB.syncToSession.getTortoiseDocsForTurtle(req)
-  .then(tortoiseDocsForTurtle => {
-    log('\n get missing records for Turtle');
-    log('\n #4 HTTP response ==> Turtle with missing records');
-    res.send(tortoiseDocsForTurtle);
-  });
+    .then(tortoiseDocsForTurtle => {
+      // log('\n getTortoiseDocsForTurtle() - get missing records for Turtle');
+      log('\n #4 HTTP response ==> Turtle with missing records');
+      res.send(tortoiseDocsForTurtle);
+    });
 });
 
 router.get('/_confirm_sync', (req, res) => {
   log('\n #5 HTTP GET_ALL_KEYS request <== Turtle with confirmation');
   tortoiseDB.syncToSession.updateSyncToTurtleDoc()
+    // .then(() => log('\n updateSyncToTurtleDoc()'))
     .then(() => log('\n #6 HTTP response ==> Turtle with updated sync history and confirmation'))
     .then(() => res.status(200).send())
     .then(() => logTo('\n ------- Tortoise ==> Turtle sync complete ------'))
