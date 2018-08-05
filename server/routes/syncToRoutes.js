@@ -8,18 +8,22 @@ var log = debug('tortoiseDB:syncTo');
 var logTo = debug('tortoiseDB:syncToSummary');
 
 router.post('/_changed_meta_docs', (req, res) => {
-  // Initialize new syncTo object
-  tortoiseDB.syncTo();
-  logTo('\n\n ------- NEW Tortoise ==> Turtle SYNC ------');
-  log('\n #1 HTTP POST request <== Turtle requesting any changes since last sync');
-  // Then begin sync process
-  tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
-    .then(changedTortoiseMetaDocs => {
-      // log(`\n getChangedMetaDocsForTurtle() - get (${changedTortoiseMetaDocs.length}) metadocs that have changed since last sync`);
-      log('\n #2 HTTP response ==> Turtle with changed metadocs');
-      res.send(changedTortoiseMetaDocs);
-    })
-    .catch(err => console.log(err))
+  if (req.initial) {
+    // Initialize new syncTo object
+    tortoiseDB.syncTo();
+    logTo('\n\n ------- NEW Tortoise ==> Turtle SYNC ------');
+    log('\n #1 HTTP POST request <== Turtle requesting any changes');
+
+    tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
+      .then((metaDocs) => res.send(metaDocs))
+      .catch(err => console.log(err));
+    log('\n #2 HTTP response ==> Turtle with changed metadocs');
+  } else {
+    log('\n #1 HTTP POST request <== Turtle follow up request for next batch of metadocs');
+    let metaDocs = tortoiseDB.syncToSession.sendBatchChangedMetaDocsToTurtle();
+    res.send(metaDocs);
+    log('\n #2 HTTP response ==> Turtle with changed metadocs');
+  }
 });
 
 router.post('/_changed_docs', (req, res) => {
