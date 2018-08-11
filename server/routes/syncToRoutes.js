@@ -8,32 +8,45 @@ var log = debug('tortoiseDB:syncTo');
 var logTo = debug('tortoiseDB:syncToSummary');
 
 router.post('/_changed_meta_docs', (req, res) => {
-  // Initialize new syncTo object
-  tortoiseDB.syncTo();
-  logTo('\n\n ------- NEW Tortoise ==> Turtle SYNC ------');
-  log('\n #1 HTTP POST request <== Turtle requesting any changes since last sync');
-  // Then begin sync process
-  tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
-    .then(changedTortoiseMetaDocs => {
-      log(`\n get (${changedTortoiseMetaDocs.length}) metadocs that have changed since last sync`);
-      log('\n #2 HTTP response ==> Turtle with changed metadocs');
-      res.send(changedTortoiseMetaDocs);
-    })
-    .catch(err => console.log(err))
+  if (req.body.initial) {
+    // Initialize new syncTo object
+    tortoiseDB.syncTo();
+    logTo('\n\n ------- NEW Tortoise ==> Turtle SYNC ------');
+    log('\n #1 HTTP POST request <== Initial Turtle requesting any changes');
+
+    tortoiseDB.syncToSession.getChangedMetaDocsForTurtle(req)
+      .then((metaDocs) => {
+        log(`\n #2 HTTP response ==> Turtle with (${metaDocs.metaDocs.length}) changed metadocs`);
+        res.send(metaDocs)
+      })
+      .catch(err => console.log(err));
+  } else {
+    log('\n #1 HTTP POST request <== Turtle follow up request for next batch of metadocs');
+    let metaDocs = tortoiseDB.syncToSession.sendBatchChangedMetaDocsToTurtle();
+    res.send(metaDocs);
+    log(`\n #2 HTTP response ==> Turtle with (${metaDocs.metaDocs.length}) changed metadocs`);
+  }
 });
 
 router.post('/_changed_docs', (req, res) => {
-  log(`\n #3 HTTP POST request <== Turtle requesting (${req.body.revIds.length}) missing records`);
-  tortoiseDB.syncToSession.getTortoiseDocsForTurtle(req)
-  .then(tortoiseDocsForTurtle => {
-    log('\n get missing records for Turtle');
-    log('\n #4 HTTP response ==> Turtle with missing records');
-    res.send(tortoiseDocsForTurtle);
-  });
+
+  if (req.body.initial) {
+    log(`\n #3 HTTP POST request <== Initial Turtle requesting (${req.body.revIds.length}) store docs`);
+    tortoiseDB.syncToSession.getTortoiseDocsForTurtle(req)
+      .then(docs => {
+        log(`\n #4 HTTP response ==> Turtle with (${docs.docs.length}) store docs`);
+        res.send(docs);
+      });
+  } else {
+    log(`\n #3 HTTP POST request <== Turtle follow up request for store docs`);
+    let docs = tortoiseDB.syncToSession.sendBatchDocsToTurtle();
+    log(`\n #4 HTTP response ==> Turtle with (${docs.docs.length}) store docs`);
+    res.send(docs);
+  }
 });
 
 router.get('/_confirm_sync', (req, res) => {
-  log('\n #5 HTTP GET_ALL_KEYS request <== Turtle with confirmation');
+  log('\n #5 HTTP GET request <== Turtle with confirmation');
   tortoiseDB.syncToSession.updateSyncToTurtleDoc()
     .then(() => log('\n #6 HTTP response ==> Turtle with updated sync history and confirmation'))
     .then(() => res.status(200).send())

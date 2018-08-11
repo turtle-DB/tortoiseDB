@@ -5,75 +5,91 @@ var log = debug('tortoiseDB:merge');
 
 class SyncFrom {
 
-  insertNewDocsIntoStore(docs) {
-    if (docs.length === 0) {
-      console.log('FYI: No docs were sent over from turtle to insert.');
-      return Promise.resolve();
-    } else {
-      return mongoShell.command(mongoShell._store, "CREATE_MANY", docs);
-    }
+  constructor() {
+    this.docsFromTurtle = [];
+    this.updatedMetaDocs = [];
+    this.newTurtleMetaDocs = [];
   }
 
-  updateSyncFromTurtleDoc(newSyncFromTurtleDoc) {
-    return this.getHighestTortoiseKey()
-    .then(() => {
-      newSyncFromTurtleDoc.history[0].lastTortoiseKey = this.highestTortoiseKey;
-      return mongoShell.command(mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
-    })
+  // #1 HTTP POST '/_last_tortoise_key'
+
+  getLastTortoiseKey(req) {
+    const turtleID = req._id;
+    const turtleSyncToLatestHistory = req.history[0];
+
+    return mongoShell.command(mongoShell._syncFromStore, "READ", { _id: turtleID })
+      .then(tortoiseSyncFromDocs => {
+        const tortoiseSyncFromDoc = tortoiseSyncFromDocs[0];
+
+        // If sync from doc already exists
+        if (tortoiseSyncFromDoc) {
+          const tortoiseSyncFromLatestHistory = tortoiseSyncFromDoc.history[0];
+
+          // If doc exists but history never created for some reason
+          if (!tortoiseSyncFromLatestHistory) {
+            return 0;
+          } else {
+            // If last keys don't match, just start from 0
+            if (tortoiseSyncFromLatestHistory.lastKey !== turtleSyncToLatestHistory.lastKey) {
+              return 0;
+            } else {
+              return tortoiseSyncFromLatestHistory.lastKey;
+            }
+          }
+        } else {
+          return this.createSyncFromDoc(turtleID).then(() => 0);
+        }
+      })
   }
 
-  getHighestTortoiseKey() {
-    return mongoShell.command(mongoShell._store, "GET_MAX_ID", {})
-    .then(key => {
-      if (key.length === 0) {
-        this.highestTortoiseKey = '0';
-      } else {
-        this.highestTortoiseKey = key[0]._id.toString();
-      }
-    });
+  createSyncFromDoc(turtleID) {
+    const newHistory = { _id: turtleID, history: [] };
+    return mongoShell.command(mongoShell._syncFromStore, "CREATE", newHistory)
   }
+
+  // #3 HTTP POST '/_missing_rev_ids'
 
   findAllMissingLeafNodes(turtleMetaDocs) {
-    log(`\n\t --- Begin revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
+    // log(`\n\t --- Begin revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
     return this.createMetaDocPairs(turtleMetaDocs)
-    .then((metaDocPairs) => {
-      log(`\n\t\t Get all matching tortoise metadocs from Mongo`);
-      return this.createNewMetaDocs(metaDocPairs)
-    })
-    .then((metaDocTrios) => {
-      return this.findMissingLeafNodes(metaDocTrios)
-    })
-    .then((missingLeafNodes) => {
-      log(`\n\t\t Make a list of leaf nodes that Tortoise is missing`);
-      log(`\n\t --- Complete revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
-      return missingLeafNodes;
-    });
+      .then((metaDocPairs) => {
+        // log(`\n\t\t createMetaDocPairs() - Get all matching tortoise metadocs from Mongo`);
+        return this.createNewMetaDocs(metaDocPairs)
+      })
+      .then((metaDocTrios) => {
+        return this.findMissingLeafNodes(metaDocTrios)
+      })
+      .then((missingLeafNodes) => {
+        // log(`\n\t\t findMissingLeafNodes() - Make a list of leaf nodes that Tortoise is missing`);
+        // log(`\n\t --- Complete revision tree merge and conflict identification for ${turtleMetaDocs.length} metadocs --- `);
+        return missingLeafNodes;
+      });
   }
 
   createMetaDocPairs(turtleMetaDocs) {
-    log(`\n\t\t Begin searching for matching metadocs...`);
+    // log(`\n\t\t Begin searching for matching metadocs...`);
     let metaDocPairs = {};
 
     const turtleMetaDocIds = turtleMetaDocs.map(turtleMetaDoc => turtleMetaDoc._id);
     return mongoShell.getMetaDocsByIds(turtleMetaDocIds)
-    .then(tortoiseMetaDocs => {
-      turtleMetaDocs.forEach(turtleMetaDoc => {
-        metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': null };
-      })
+      .then(tortoiseMetaDocs => {
+        turtleMetaDocs.forEach(turtleMetaDoc => {
+          metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': null };
+        })
 
-      tortoiseMetaDocs.forEach(tortoiseMetaDoc => {
-        metaDocPairs[tortoiseMetaDoc._id]['tortoise'] = tortoiseMetaDoc;
-      })
+        tortoiseMetaDocs.forEach(tortoiseMetaDoc => {
+          metaDocPairs[tortoiseMetaDoc._id]['tortoise'] = tortoiseMetaDoc;
+        })
 
-      return metaDocPairs;
-    })
+        return metaDocPairs;
+      })
   }
 
   createNewMetaDocs(metaDocPairs) {
     this.newRevisionTrees(metaDocPairs);
-    log(`\n\t\t Merge revision trees`);
+    // log(`\n\t\t newRevisionTrees() - Merge revision trees`);
     this.newMetaDocs(metaDocPairs);
-    log(`\n\t\t Use new tree to update _winningRev, activeLeaf properties; create new metadocs`);
+    // log(`\n\t\t createNewMetaDocs() - Use new tree to update _winningRev, activeLeaf properties; create new metadocs`);
     return metaDocPairs;
   }
 
@@ -89,7 +105,7 @@ class SyncFrom {
         const tortoiseRevTree = tortoiseMetaDoc._revisions;
         const turtleRevTree = turtleMetaDoc._revisions;
         metaDocPair.newRevisionTree = this.mergeRevTrees(tortoiseRevTree, turtleRevTree);
-        } else {
+      } else {
         metaDocPair.new = null;
       }
     });
@@ -115,6 +131,22 @@ class SyncFrom {
     });
   }
 
+  findMissingLeafNodes(metaDocTrios) {
+    let dummymissingLeafNodes = [];
+    let allLeafNodes = this.collectAllLeafIdRevs(metaDocTrios);
+
+    return this.filterToMissingLeafNodes(allLeafNodes) //mongoShell.getStoreDocsByIdRevs
+      .then(leafNodes => {
+        dummymissingLeafNodes = leafNodes;
+        let remainingTurtleLeafNodes = this.getNewTurtleLeafNodes(metaDocTrios);
+        dummymissingLeafNodes = dummymissingLeafNodes.concat(remainingTurtleLeafNodes);
+      })
+      .then(() => {
+        this.sortMetaDocsForSave(metaDocTrios);
+      })
+      .then(() => dummymissingLeafNodes)
+  }
+
   collectAllLeafIdRevs(metaDocTrios) {
     let docIDs = Object.keys(metaDocTrios);
     let leafIdRevs = [];
@@ -136,12 +168,24 @@ class SyncFrom {
     return leafIdRevs;
   }
 
+  collectAllLeafRevs(node, leafRevs = []) {
+    if (node[2].length === 0) {
+      leafRevs.push(node[0]);
+    }
+
+    for (let i = 0; i < node[2].length; i++) {
+      this.collectAllLeafRevs(node[2][i], leafRevs);
+    }
+
+    return leafRevs;
+  }
+
   filterToMissingLeafNodes(allLeafNodes) {
     return mongoShell.getStoreDocsByIdRevs(allLeafNodes)
-    .then(tortoiseDocs => {
-      const existingTortoiseIdRevs = tortoiseDocs.map(doc => doc._id_rev);
-      return allLeafNodes.filter(idRev => !existingTortoiseIdRevs.includes(idRev));
-    });
+      .then(tortoiseDocs => {
+        const existingTortoiseIdRevs = tortoiseDocs.map(doc => doc._id_rev);
+        return allLeafNodes.filter(idRev => !existingTortoiseIdRevs.includes(idRev));
+      });
   }
 
   getNewTurtleLeafNodes(metaDocTrios) {
@@ -153,10 +197,8 @@ class SyncFrom {
       let newMetaDoc = metaDocTrio.new;
       let turtleMetaDoc = metaDocTrio.turtle;
 
-      if (!newMetaDoc) {
-        if (turtleMetaDoc._winningRev) {
-          remainingTurtleLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
-        }
+      if (!newMetaDoc && turtleMetaDoc._winningRev) {
+        remainingTurtleLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
       }
     });
 
@@ -165,50 +207,50 @@ class SyncFrom {
 
   sortMetaDocsForSave(metaDocTrios) {
     let docIDs = Object.keys(metaDocTrios);
-    let updatedMetaDocs = [];
-    let newTurtleMetaDocs = [];
 
     docIDs.forEach(id => {
       let metaDocTrio = metaDocTrios[id];
       let newMetaDoc = metaDocTrio.new;
       let turtleMetaDoc = metaDocTrio.turtle;
 
-      newMetaDoc ? updatedMetaDocs.push(newMetaDoc) : newTurtleMetaDocs.push(turtleMetaDoc);
+      newMetaDoc ? this.updatedMetaDocs.push(newMetaDoc) : this.newTurtleMetaDocs.push(turtleMetaDoc);
     });
 
-    return [updatedMetaDocs, newTurtleMetaDocs];
+    return;
   }
 
-  findMissingLeafNodes(metaDocTrios) {
-    let missingLeafNodes = [];
-    this.updatedMetaDocs = [];
-    this.newTurtleMetaDocs = [];
-
-    let dummymissingLeafNodes = [];
-    let allLeafNodes = this.collectAllLeafIdRevs(metaDocTrios);
-
-    return this.filterToMissingLeafNodes(allLeafNodes) //mongoShell.getStoreDocsByIdRevs
-    .then(leafNodes => {
-      dummymissingLeafNodes = leafNodes;
-      let remainingTurtleLeafNodes = this.getNewTurtleLeafNodes(metaDocTrios);
-      dummymissingLeafNodes = dummymissingLeafNodes.concat(remainingTurtleLeafNodes);
-    })
-    .then(() => {
-      [this.updatedMetaDocs, this.newTurtleMetaDocs] = this.sortMetaDocsForSave(metaDocTrios);
-    })
-    .then(() => dummymissingLeafNodes)
-  }
+  // #5 HTTP POST '/_insert_docs'
 
   insertUpdatedMetaDocs() {
     return Promise.resolve().then(() => {
       return mongoShell.updateManyMetaDocs(this.updatedMetaDocs);
     })
-    .then(() => {
-      if (this.newTurtleMetaDocs.length > 0) {
-        return mongoShell.command(mongoShell._meta, "CREATE_MANY", this.newTurtleMetaDocs);
-      }
-    })
+      .then(() => {
+        if (this.newTurtleMetaDocs.length > 0) {
+          return mongoShell.command(mongoShell._meta, "CREATE_MANY", this.newTurtleMetaDocs);
+        }
+      })
   }
+
+  insertNewDocsIntoStore() {
+    if (this.docsFromTurtle === 0) {
+      console.log('FYI: No docs were sent over from turtle to insert.');
+      return Promise.resolve();
+    } else {
+      return mongoShell.command(mongoShell._store, "CREATE_MANY", this.docsFromTurtle);
+    }
+  }
+
+  updateSyncFromTurtleDoc(newSyncFromTurtleDoc) {
+    return mongoShell.command(mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
+  }
+
+  saveDocsBatch(docs) {
+    return Promise.resolve(this.docsFromTurtle.push(...docs));
+  }
+
+
+  // Helpers
 
   mergeRevTrees(node1, node2) {
     const node1Children = node1[2];
@@ -289,28 +331,16 @@ class SyncFrom {
     return leafRevs;
   }
 
-  collectAllLeafRevs(node, leafRevs = []) {
-    if (node[2].length === 0) {
-      leafRevs.push(node[0]);
-    }
-
-    for (let i = 0; i < node[2].length; i++) {
-      this.collectAllLeafRevs(node[2][i], leafRevs);
-    }
-
-    return leafRevs;
-  }
-
   findMissingLeafNodesOfDoc(metaDoc) {
     const leafRevs = this.collectAllLeafRevs(metaDoc._revisions);
     const docId = metaDoc._id;
     const leafIdRevs = leafRevs.map(rev => docId + '::' + rev);
 
     return mongoShell.getStoreDocsByIdRevs(leafIdRevs)
-    .then(tortoiseDocs => {
-      const existingTortoiseIdRevs = tortoiseDocs.map(doc => doc._id_rev);
-      return leafIdRevs.filter(idRev => !existingTortoiseIdRevs.includes(idRev));
-    });
+      .then(tortoiseDocs => {
+        const existingTortoiseIdRevs = tortoiseDocs.map(doc => doc._id_rev);
+        return leafIdRevs.filter(idRev => !existingTortoiseIdRevs.includes(idRev));
+      });
   }
 }
 
