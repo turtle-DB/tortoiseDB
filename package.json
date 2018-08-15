@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server/server.js",
+    "start": "nodemon index.js",
     "debug": "DEBUG=tortoiseDB:* node index.js"
   },
   "repository": {

@@ -2,12 +2,11 @@ const debug = require('debug');
 var log = debug('tortoiseDB:syncTo');
 var logTo = debug('tortoiseDB:syncToSummary');
 
-const BATCH_LIMIT = 1000;
-
 class SyncTo {
-  constructor(mongoShell) {
+  constructor(mongoShell, batchLimit) {
     this.sessionID = new Date().toISOString();
     this.mongoShell = mongoShell;
+    this.batchLimit = batchLimit;
   }
 
   // #1 HTTP POST '/_changed_meta_docs'
@@ -75,7 +74,7 @@ class SyncTo {
   }
 
   sendBatchChangedMetaDocsToTurtle() {
-    let currentBatch = this.changedTortoiseMetaDocs.splice(0, BATCH_LIMIT);
+    let currentBatch = this.changedTortoiseMetaDocs.splice(0, this.batchLimit);
     return {
       metaDocs: currentBatch,
       lastBatch: this.changedTortoiseMetaDocs.length === 0
@@ -98,7 +97,7 @@ class SyncTo {
   }
 
   sendBatchDocsToTurtle() {
-    let currentBatch = this.storeDocsForTurtle.splice(0, BATCH_LIMIT);
+    let currentBatch = this.storeDocsForTurtle.splice(0, this.batchLimit);
     let lastBatch = this.storeDocsForTurtle.length === 0;
     const payload = {
       docs: currentBatch,

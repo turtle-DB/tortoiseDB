@@ -4,11 +4,12 @@ const { SyncFrom } = require('./syncFrom');
 const setUpServer = require('./server/server');
 
 class TortoiseDB {
-  constructor({ name = 'default', port = process.env.PORT, mongoURI = process.env.MONGODB_URI } = {}) {
+  constructor({ name = 'default', port = process.env.PORT, mongoURI = process.env.MONGODB_URI, batchLimit = 1000 } = {}) {
     this.port = port;
     this.mongoShell = new MongoShell(name, mongoURI);
     this.server = setUpServer(this);
     this.syncInProgress = false;
+    this.batchLimit = batchLimit;
   }
 
   start() {
@@ -47,7 +48,7 @@ class TortoiseDB {
   }
 
   syncTo() {
-    this.syncToSession = new SyncTo(this.mongoShell);
+    this.syncToSession = new SyncTo(this.mongoShell, this.batchLimit);
   }
 }
 
