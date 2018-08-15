@@ -1,6 +1,6 @@
-const { MongoShell } = require('./db/mongoShell');
-const { SyncTo } = require('./syncTo');
-const { SyncFrom } = require('./syncFrom');
+const MongoShell = require('./db/mongoShell');
+const SyncTo = require('./syncTo');
+const SyncFrom = require('./syncFrom');
 const setUpServer = require('./server/server');
 
 class TortoiseDB {
@@ -52,4 +52,4 @@ class TortoiseDB {
   }
 }
 
-module.exports = { TortoiseDB };
+module.exports = TortoiseDB;

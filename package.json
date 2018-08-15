@@ -1,23 +1,45 @@
 {
-  "name": "tortoiseDB",
+  "name": "tortoisedb",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "dist/tortoiseDB.min.js",
+  "license": "MIT",
+  "description": "A simple Node server and mongoDB wrapper for clients to sync to when using turtleDB.",
+  "homepage": "https://turtle-db.github.io/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/turtle-DB/tortoiseDB.git"
+  },
+  "keywords": [
+    "indexeddb",
+    "offline-first",
+    "document",
+    "database",
+    "JSON",
+    "versioning"
+  ],
+  "contributors": [
+    {
+      "name": "Andrew Houston-Floyd",
+      "email": "andrew.houstonfloyd@gmail.com",
+      "url": ""
+    },
+    {
+      "name": "Steven Shen",
+      "email": "steeve.shen@gmail.com",
+      "url": ""
+    },
+    {
+      "name": "Max Appleton",
+      "email": "maxiappleton@gmail.com",
+      "url": "https://maxiappleton.github.io/"
+    }
+  ],
   "scripts": {
+    "build": "webpack --config webpack.prod.js",
     "start": "nodemon index.js",
     "debug": "DEBUG=tortoiseDB:* node index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/turtle-DB/tortoiseDB.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/turtle-DB/tortoiseDB/issues"
-  },
-  "homepage": "https://github.com/turtle-DB/tortoiseDB#readme",
+  "unpkg": "dist/tortoiseDB.min.js",
   "dependencies": {
     "debug": "^3.1.0",
     "express": "^4.16.3",
@@ -25,6 +47,9 @@
     "supports-color": "^5.4.0"
   },
   "devDependencies": {
-    "nodemon": "^1.18.3"
+    "nodemon": "^1.18.3",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0",
+    "webpack-node-externals": "^1.7.2"
   }
 }

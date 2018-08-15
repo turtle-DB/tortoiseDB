@@ -123,4 +123,4 @@ class MongoShell {
   }
 }
 
-module.exports = { MongoShell };
+module.exports = MongoShell;

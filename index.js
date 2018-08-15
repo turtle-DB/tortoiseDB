@@ -1,4 +1,5 @@
-const { TortoiseDB } = require('./tortoiseDB');
+// const TortoiseDB = require('./tortoiseDB');
+const TortoiseDB = require('./dist/tortoiseDB.min.js');
 
 const db = new TortoiseDB({
   name: 'demo',

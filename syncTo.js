@@ -1,7 +1,3 @@
-const debug = require('debug');
-var log = debug('tortoiseDB:syncTo');
-var logTo = debug('tortoiseDB:syncToSummary');
-
 class SyncTo {
   constructor(mongoShell, batchLimit) {
     this.sessionID = new Date().toISOString();
@@ -145,4 +141,4 @@ class SyncTo {
   }
 }
 
-module.exports = { SyncTo };
+module.exports = SyncTo;

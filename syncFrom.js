@@ -1,8 +1,4 @@
-const debug = require('debug');
-var log = debug('tortoiseDB:merge');
-
 class SyncFrom {
-
   constructor(mongoShell) {
     this.docsFromTurtle = [];
     this.updatedMetaDocs = [];
@@ -354,4 +350,4 @@ class SyncFrom {
   }
 }
 
-module.exports = { SyncFrom };
+module.exports = SyncFrom;
