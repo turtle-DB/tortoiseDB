@@ -1,14 +1,13 @@
 const { MongoClient, ObjectId } = require('mongodb');
-const uuidv4 = require("uuid/v4");
 
 class MongoShell {
-  constructor() {
+  constructor(name, url) {
     this._store = 'store';
     this._meta = 'metaStore';
     this._syncFromStore = 'syncFromStore';
     this._syncToStore = 'syncToStore';
-    this._url = 'mongodb://localhost:27017';
-    this._dbName = 'tortoiseDB';
+    this._url = url;
+    this._dbName = `tortoiseDB-${name}`;
 
     let db;
     this.connect()
@@ -20,7 +19,7 @@ class MongoShell {
         const storeNames = stores.map(store => store.name);
         if (!storeNames.includes(this._store)) {
           db.createCollection(this._store)
-          .then(() => db.collection(this._store).createIndex({ _id_rev: 1 }))
+            .then(() => db.collection(this._store).createIndex({ _id_rev: 1 }))
         }
         if (!storeNames.includes(this._meta)) {
           db.createCollection(this._meta)
@@ -71,24 +70,25 @@ class MongoShell {
             }
           }).toArray();
         } else if (action === 'GET_MAX_ID') {
-          return collection.find().sort({_id: -1}).limit(1).toArray();
+          return collection.find().sort({ _id: -1 }).limit(1).toArray();
         } else if (action === 'GET_ALL_IDS') {
-          return collection.find({}, {_id: 1}).sort({_id: 1}).map(function(item){ return item._id; }).toArray();
+          return collection.find({}, { _id: 1 }).sort({ _id: 1 }).map(function (item) { return item._id; }).toArray();
         } else if (action === 'GET_ALL_IDS_GREATER_THAN') {
           return collection.find({
             _id: {
               $gt: ObjectId(query.min)
             }
-          }, {_id: 1}).sort({_id: 1}).map(function(item){ return item._id; }).toArray();
+          }, { _id: 1 }).sort({ _id: 1 }).map(function (item) { return item._id; }).toArray();
         } else if (action === "UPDATE") {
-          return collection.update({ _id: query._id }, query, {upsert: true});
+          return collection.update({ _id: query._id }, query, { upsert: true });
         } else if (action === "UPDATE_MANY") {
           // let result = Promise.resolve();
           // query.forEach(doc => {
           //   result = result.then(() => collection.update({ _id: doc._id }, doc, {upsert: true}));
           // });
           // return result;
-       }})
+        }
+      })
       .then(res => {
         this._client.close();
         return res;
@@ -102,20 +102,20 @@ class MongoShell {
   updateManyMetaDocs(docs) {
     let result = Promise.resolve();
     docs.forEach(doc => {
-      result = result.then(() => this.command(mongoShell._meta, "UPDATE", doc));
+      result = result.then(() => this.command(this._meta, "UPDATE", doc));
     });
 
     return result;
   }
 
   getStoreDocsByIdRevs(idRevs) {
-    return this.command(this._store, 'READ', { _id_rev: {$in: idRevs} });
+    return this.command(this._store, 'READ', { _id_rev: { $in: idRevs } });
   }
 
   // METASTORE OPERATIONS
 
   getMetaDocsByIds(ids) {
-    return this.command(this._meta, 'READ', {_id: {$in: ids}})
+    return this.command(this._meta, 'READ', { _id: { $in: ids } })
   }
 
   updateMetaDocs(docs) {
@@ -123,6 +123,4 @@ class MongoShell {
   }
 }
 
-const mongoShell = new MongoShell();
-
-module.exports = { mongoShell };
+module.exports = MongoShell;

@@ -1,14 +1,9 @@
-const { mongoShell } = require('./mongoShell');
-
-const debug = require('debug');
-var log = debug('tortoiseDB:merge');
-
 class SyncFrom {
-
-  constructor() {
+  constructor(mongoShell) {
     this.docsFromTurtle = [];
     this.updatedMetaDocs = [];
     this.newTurtleMetaDocs = [];
+    this.mongoShell = mongoShell;
   }
 
   // #1 HTTP POST '/_last_tortoise_key'
@@ -17,7 +12,7 @@ class SyncFrom {
     const turtleID = req._id;
     const turtleSyncToLatestHistory = req.history[0];
 
-    return mongoShell.command(mongoShell._syncFromStore, "READ", { _id: turtleID })
+    return this.mongoShell.command(this.mongoShell._syncFromStore, "READ", { _id: turtleID })
       .then(tortoiseSyncFromDocs => {
         const tortoiseSyncFromDoc = tortoiseSyncFromDocs[0];
 
@@ -44,7 +39,7 @@ class SyncFrom {
 
   createSyncFromDoc(turtleID) {
     const newHistory = { _id: turtleID, history: [] };
-    return mongoShell.command(mongoShell._syncFromStore, "CREATE", newHistory)
+    return this.mongoShell.command(this.mongoShell._syncFromStore, "CREATE", newHistory)
   }
 
   // #3 HTTP POST '/_missing_rev_ids'
@@ -71,7 +66,7 @@ class SyncFrom {
     let metaDocPairs = {};
 
     const turtleMetaDocIds = turtleMetaDocs.map(turtleMetaDoc => turtleMetaDoc._id);
-    return mongoShell.getMetaDocsByIds(turtleMetaDocIds)
+    return this.mongoShell.getMetaDocsByIds(turtleMetaDocIds)
       .then(tortoiseMetaDocs => {
         turtleMetaDocs.forEach(turtleMetaDoc => {
           metaDocPairs[turtleMetaDoc._id] = { 'turtle': turtleMetaDoc, 'tortoise': null };
@@ -135,7 +130,7 @@ class SyncFrom {
     let dummymissingLeafNodes = [];
     let allLeafNodes = this.collectAllLeafIdRevs(metaDocTrios);
 
-    return this.filterToMissingLeafNodes(allLeafNodes) //mongoShell.getStoreDocsByIdRevs
+    return this.filterToMissingLeafNodes(allLeafNodes) //this.mongoShell.getStoreDocsByIdRevs
       .then(leafNodes => {
         dummymissingLeafNodes = leafNodes;
         let remainingTurtleLeafNodes = this.getNewTurtleLeafNodes(metaDocTrios);
@@ -181,7 +176,7 @@ class SyncFrom {
   }
 
   filterToMissingLeafNodes(allLeafNodes) {
-    return mongoShell.getStoreDocsByIdRevs(allLeafNodes)
+    return this.mongoShell.getStoreDocsByIdRevs(allLeafNodes)
       .then(tortoiseDocs => {
         const existingTortoiseIdRevs = tortoiseDocs.map(doc => doc._id_rev);
         return allLeafNodes.filter(idRev => !existingTortoiseIdRevs.includes(idRev));
@@ -223,11 +218,11 @@ class SyncFrom {
 
   insertUpdatedMetaDocs() {
     return Promise.resolve().then(() => {
-      return mongoShell.updateManyMetaDocs(this.updatedMetaDocs);
+      return this.mongoShell.updateManyMetaDocs(this.updatedMetaDocs);
     })
       .then(() => {
         if (this.newTurtleMetaDocs.length > 0) {
-          return mongoShell.command(mongoShell._meta, "CREATE_MANY", this.newTurtleMetaDocs);
+          return this.mongoShell.command(this.mongoShell._meta, "CREATE_MANY", this.newTurtleMetaDocs);
         }
       })
   }
@@ -237,12 +232,14 @@ class SyncFrom {
       console.log('FYI: No docs were sent over from turtle to insert.');
       return Promise.resolve();
     } else {
-      return mongoShell.command(mongoShell._store, "CREATE_MANY", this.docsFromTurtle);
+      if (this.docsFromTurtle.length > 0) {
+        return this.mongoShell.command(this.mongoShell._store, "CREATE_MANY", this.docsFromTurtle);
+      }
     }
   }
 
   updateSyncFromTurtleDoc(newSyncFromTurtleDoc) {
-    return mongoShell.command(mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
+    return this.mongoShell.command(this.mongoShell._syncFromStore, "UPDATE", newSyncFromTurtleDoc)
   }
 
   saveDocsBatch(docs) {
@@ -258,19 +255,27 @@ class SyncFrom {
 
     const commonNodes = this.findCommonNodes(node1Children, node2Children);
 
-    if (commonNodes) {
-      // append different nodes in node2 to node1's children subarray
-      const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
-      node1[2] = [...node1Children, ...node2ChildrenDiffs];
+    // if (commonNodes) {
+    //   // append different nodes in node2 to node1's children subarray
+    //   const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
+    //   node1[2] = [...node1Children, ...node2ChildrenDiffs];
 
-      for (let i = 0; i < commonNodes.length; i++) {
-        let commonNodesPair = commonNodes[i];
-        this.mergeRevTrees(commonNodesPair[0], commonNodesPair[1]);
-      }
+    //   for (let i = 0; i < commonNodes.length; i++) {
+    //     let commonNodesPair = commonNodes[i];
+    //     this.mergeRevTrees(commonNodesPair[0], commonNodesPair[1]);
+    //   }
 
-    } else {
-      // fork
-      node1[2] = [...node1Children, ...node2Children];
+    // } else {
+    //   // fork
+    //   node1[2] = [...node1Children, ...node2Children];
+    // }
+
+    const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
+    node1[2] = [...node1Children, ...node2ChildrenDiffs];
+
+    for (let i = 0; i < commonNodes.length; i++) {
+      let commonNodesPair = commonNodes[i];
+      this.mergeRevTrees(commonNodesPair[0], commonNodesPair[1]);
     }
 
     return node1;
@@ -288,7 +293,8 @@ class SyncFrom {
       }
     }
 
-    return commonNodes.length === 0 ? null : commonNodes;
+    return commonNodes;
+    // return commonNodes.length === 0 ? null : commonNodes;
   }
 
   getNode2ChildrenDiffs(node1Children, node2Children) {
@@ -336,7 +342,7 @@ class SyncFrom {
     const docId = metaDoc._id;
     const leafIdRevs = leafRevs.map(rev => docId + '::' + rev);
 
-    return mongoShell.getStoreDocsByIdRevs(leafIdRevs)
+    return this.mongoShell.getStoreDocsByIdRevs(leafIdRevs)
       .then(tortoiseDocs => {
         const existingTortoiseIdRevs = tortoiseDocs.map(doc => doc._id_rev);
         return leafIdRevs.filter(idRev => !existingTortoiseIdRevs.includes(idRev));
@@ -344,4 +350,4 @@ class SyncFrom {
   }
 }
 
-module.exports = { SyncFrom };
+module.exports = SyncFrom;
