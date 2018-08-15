@@ -26,9 +26,6 @@ class SyncTo {
     return this.getHighestTortoiseKey() // this.highestTortoiseKey
       .then(() => {
         if (lastTurtleKey === this.highestTortoiseKey) {
-          log('\n #1 No sync needed - last key and highest key are equal');
-          logTo('\n ------- Tortoise ==> Turtle sync complete ------');
-
           return {
             lastBatch: true,
             metaDocs: []

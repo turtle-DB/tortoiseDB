@@ -8,11 +8,38 @@ class TortoiseDB {
     this.port = port;
     this.mongoShell = new MongoShell(name, mongoURI);
     this.server = setUpServer(this);
+    this.syncInProgress = false;
   }
 
   start() {
     this.server.listen(this.port);
     console.log(`TurtleDB server ready to go on port ${this.port}!`);
+  }
+
+  startSyncSession() {
+    const checkSyncProgress = (resolve) => {
+      if (!this.syncInProgress) {
+        console.log('Sync ready to go!');
+        clearInterval(this.intervalObj);
+        this.syncInProgress = true;
+        this.syncFrom();
+        resolve();
+      } else {
+        console.log('Sorry another sync still in progress.');
+      }
+    };
+
+    return new Promise((resolve, reject) => {
+      if (!this.syncInProgress) {
+        console.log('Sync ready to go!');
+        this.syncInProgress = true;
+        this.syncFrom();
+        resolve();
+      } else {
+        console.log('Sorry another sync still in progress.');
+        this.intervalObj = setInterval(checkSyncProgress.bind(this, resolve), 200);
+      }
+    });
   }
 
   syncFrom() {

@@ -8,21 +8,32 @@ module.exports = function setUpSyncFromRoutes(tortoiseDB) {
   var logFrom = debug('tortoiseDB:syncFromSummary');
 
   router.post('/_last_tortoise_key', (req, res) => {
-
     // Initialize new replicateFrom object
-    tortoiseDB.syncFrom();
-
-    logFrom('\n\n ------- NEW Turtle ==> Tortoise SYNC ------');
-    log('\n #1 HTTP POST request <== Turtle requesting checkpoint from last sync session');
-
-    // Then begin replication process
-    tortoiseDB.syncFromSession.getLastTortoiseKey(req.body)
+    tortoiseDB.startSyncSession()
+      .then(() => {
+        logFrom('\n\n ------- NEW Turtle ==> Tortoise SYNC ------');
+        log('\n #1 HTTP POST request <== Turtle requesting checkpoint from last sync session');
+      })
+      .then(() => tortoiseDB.syncFromSession.getLastTortoiseKey(req.body))
       .then(lastKey => {
         // log(`\n Get last Turtle key (${lastKey}) from previous sync session`);
         log('\n #2 HTTP response ==> Turtle with last key');
         res.send(lastKey.toString())
       })
       .catch(err => console.log("_last_tortoise_key error:", err))
+
+
+    // logFrom('\n\n ------- NEW Turtle ==> Tortoise SYNC ------');
+    // log('\n #1 HTTP POST request <== Turtle requesting checkpoint from last sync session');
+
+    // // Then begin replication process
+    // tortoiseDB.syncFromSession.getLastTortoiseKey(req.body)
+    //   .then(lastKey => {
+    //     // log(`\n Get last Turtle key (${lastKey}) from previous sync session`);
+    //     log('\n #2 HTTP response ==> Turtle with last key');
+    //     res.send(lastKey.toString())
+    //   })
+    //   .catch(err => console.log("_last_tortoise_key error:", err))
   });
 
   router.post('/_missing_rev_ids', (req, res) => {

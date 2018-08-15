@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "nodemon server/server.js",
-    "debug": "DEBUG=tortoiseDB:* node server/server.js"
+    "debug": "DEBUG=tortoiseDB:* node index.js"
   },
   "repository": {
     "type": "git",
@@ -21,10 +21,8 @@
   "dependencies": {
     "debug": "^3.1.0",
     "express": "^4.16.3",
-    "md5": "^2.2.1",
     "mongodb": "^3.1.1",
-    "supports-color": "^5.4.0",
-    "uuid": "^3.3.2"
+    "supports-color": "^5.4.0"
   },
   "devDependencies": {
     "nodemon": "^1.18.3"
