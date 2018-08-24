@@ -10,7 +10,7 @@
 
 # Overview
 
-An easy to set-up NodeJS server and mongoDB wrapper for clients to sync to when using [TurtleDB](https://github.com/turtle-DB/turtleDB).
+An easy to set-up NodeJS server and mongoDB wrapper for clients to sync to when using [TurtleDB](https://github.com/turtle-DB/turtleDB). Enables offline-first applications built with turtleDB to be fully collaborative with automated document versioning, history merging, and synchonization management.
 
 Built using [Express](https://github.com/expressjs/express) and [Mongo DB Native NodeJS Driver](https://github.com/mongodb/node-mongodb-native).
 
