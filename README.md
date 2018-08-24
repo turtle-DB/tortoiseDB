@@ -33,8 +33,6 @@ const TortoiseDB = require('tortoisedb');
 ```
 
 ```javascript
-const TortoiseDB = require('./tortoiseDB');
-
 // Create a new instance
 const app = new TortoiseDB({
   // Choose database name  - defaults to 'default' if not provided
