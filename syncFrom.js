@@ -283,6 +283,7 @@ class SyncFrom {
 
   findCommonNodes(node1Children, node2Children) {
     let commonNodes = [];
+
     for (let i = 0; i < node1Children.length; i++) {
       let node1Child = node1Children[i];
       for (let j = 0; j < node2Children.length; j++) {
@@ -301,6 +302,32 @@ class SyncFrom {
     const node1ChildRevs = node1Children.map(node => node[0]);
     return node2Children.filter(node2Child => !node1ChildRevs.includes(node2Child[0]));
   }
+
+  // sortNodes(node1Children, node2Children) {
+  //   let commonNodes = [];
+  //   let diffNodes = [];
+
+  //   for (let i = 0; i < node2Children.length; i++) {
+  //     let node2Child = node2Children[i];
+  //     let commonNodeFound = false;
+
+  //     for (let j = 0; j < node1Children.length; j++) {
+  //       let node1Child = node1Children[j];
+
+  //       if (node2Child[0] === node1Child[0]) {
+  //         commonNodeFound = true;
+  //         commonNodes.push([node1Child, node2Child]);
+  //       }
+  //     }
+
+  //     if (!commonNodeFound) {
+  //       diffNodes.push(node2Child);
+  //     }
+
+  //   }
+
+  //   return { commonNodes, diffNodes };
+  // }
 
   getWinningRev(node) {
     const leafRevs = this.collectActiveLeafRevs(node);
