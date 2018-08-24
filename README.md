@@ -37,13 +37,13 @@ const TortoiseDB = require('./tortoiseDB');
 
 // Create a new instance
 const app = new TortoiseDB({
-  // Choose database name
+  // Choose database name  - defaults to 'default' if not provided
   name: 'demo',
-  // Set server port
+  // Set server port - defaults to process.env.PORT if not provided
   port: 3000,
-  // Provide mongodb URI
+  // Provide mongodb URI - defaults to process.env.MONGODB_URI if not provided
   mongoURI: 'mongodb://localhost:27017',
-  // Set batch limit
+  // Set batch limit - defaults to 1000 if not provided
   batchLimit: 1000
 });
 

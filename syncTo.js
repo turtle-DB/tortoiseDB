@@ -8,12 +8,6 @@ class SyncTo {
   // #1 HTTP POST '/_changed_meta_docs'
 
   getChangedMetaDocsForTurtle(req) {
-    // Again - do we even want to check if the Tortoise DB key and the Turtle DB key are the same?
-    // Why not just take the key from Turtle and let Turtle store the sync doc and handle it all?
-    // Doesn't even care about turtle ID? Just recieves a last key value?
-    // For example, could do:
-    // const lastTurtleKey = this.getLastTurtleKey(req.body.turtleID, req.body.lastTurtleKey);
-
     const lastTurtleKey = req.body.lastTurtleKey;
     this.turtleID = req.body.turtleID;
 

@@ -255,21 +255,6 @@ class SyncFrom {
 
     const commonNodes = this.findCommonNodes(node1Children, node2Children);
 
-    // if (commonNodes) {
-    //   // append different nodes in node2 to node1's children subarray
-    //   const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
-    //   node1[2] = [...node1Children, ...node2ChildrenDiffs];
-
-    //   for (let i = 0; i < commonNodes.length; i++) {
-    //     let commonNodesPair = commonNodes[i];
-    //     this.mergeRevTrees(commonNodesPair[0], commonNodesPair[1]);
-    //   }
-
-    // } else {
-    //   // fork
-    //   node1[2] = [...node1Children, ...node2Children];
-    // }
-
     const node2ChildrenDiffs = this.getNode2ChildrenDiffs(node1Children, node2Children);
     node1[2] = [...node1Children, ...node2ChildrenDiffs];
 
@@ -295,39 +280,12 @@ class SyncFrom {
     }
 
     return commonNodes;
-    // return commonNodes.length === 0 ? null : commonNodes;
   }
 
   getNode2ChildrenDiffs(node1Children, node2Children) {
     const node1ChildRevs = node1Children.map(node => node[0]);
     return node2Children.filter(node2Child => !node1ChildRevs.includes(node2Child[0]));
   }
-
-  // sortNodes(node1Children, node2Children) {
-  //   let commonNodes = [];
-  //   let diffNodes = [];
-
-  //   for (let i = 0; i < node2Children.length; i++) {
-  //     let node2Child = node2Children[i];
-  //     let commonNodeFound = false;
-
-  //     for (let j = 0; j < node1Children.length; j++) {
-  //       let node1Child = node1Children[j];
-
-  //       if (node2Child[0] === node1Child[0]) {
-  //         commonNodeFound = true;
-  //         commonNodes.push([node1Child, node2Child]);
-  //       }
-  //     }
-
-  //     if (!commonNodeFound) {
-  //       diffNodes.push(node2Child);
-  //     }
-
-  //   }
-
-  //   return { commonNodes, diffNodes };
-  // }
 
   getWinningRev(node) {
     const leafRevs = this.collectActiveLeafRevs(node);
