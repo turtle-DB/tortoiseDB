@@ -1,4 +1,4 @@
-<p align="center"><img width=80% src="/tortoiseDB-logo-1.png"></p>
+<p align="center"><img width=100% src="/tortoiseDB-logo-1.png"></p>
 
 <p align="center">
   <a href="#overview">Overview</a> •
