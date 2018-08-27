@@ -25,5 +25,11 @@ module.exports = function setUpServer(tortoiseDB) {
     res.status(200).send();
   })
 
+  // Drop DB
+
+  app.get("/dropdb", (req, res) => {
+    tortoiseDB.dropDB().then(() => res.status(200).send());
+  });
+
   return app;
 }

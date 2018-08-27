@@ -20,7 +20,6 @@ class TortoiseDB {
   startSyncSession() {
     const checkSyncProgress = (resolve) => {
       if (!this.syncInProgress) {
-        console.log('Sync ready to go!');
         clearInterval(this.intervalObj);
         this.syncInProgress = true;
         this.syncFrom();
@@ -32,7 +31,6 @@ class TortoiseDB {
 
     return new Promise((resolve, reject) => {
       if (!this.syncInProgress) {
-        console.log('Sync ready to go!');
         this.syncInProgress = true;
         this.syncFrom();
         resolve();
@@ -49,6 +47,10 @@ class TortoiseDB {
 
   syncTo() {
     this.syncToSession = new SyncTo(this.mongoShell, this.batchLimit);
+  }
+
+  dropDB() {
+    return this.mongoShell.dropDB();
   }
 }
 

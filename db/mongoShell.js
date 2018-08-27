@@ -121,6 +121,13 @@ class MongoShell {
   updateMetaDocs(docs) {
     return this.command(this._meta, 'UPDATE_MANY', docs);
   }
+
+  dropDB() {
+    return this.connect()
+      .then(db => db.dropDatabase())
+      .then(res => this._client.close())
+      .catch(err => console.log('DropDB Error', err));
+  }
 }
 
 module.exports = MongoShell;

@@ -127,8 +127,11 @@ class SyncFrom {
   }
 
   findMissingLeafNodes(metaDocTrios) {
+    console.log('metaDocTrios', metaDocTrios);
     let dummymissingLeafNodes = [];
     let allLeafNodes = this.collectAllLeafIdRevs(metaDocTrios);
+
+    console.log('allLeafNodes', allLeafNodes);
 
     return this.filterToMissingLeafNodes(allLeafNodes) //this.mongoShell.getStoreDocsByIdRevs
       .then(leafNodes => {
@@ -193,9 +196,14 @@ class SyncFrom {
       let turtleMetaDoc = metaDocTrio.turtle;
 
       if (!newMetaDoc && turtleMetaDoc._winningRev) {
-        remainingTurtleLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
+        for (let i = 0; i < turtleMetaDoc._leafRevs.length; i++) {
+          remainingTurtleLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._leafRevs[i]);
+        }
+        // remainingTurtleLeafNodes.push(turtleMetaDoc._id + '::' + turtleMetaDoc._winningRev);
       }
     });
+
+    console.log('remainingTurtleLeafNodes', remainingTurtleLeafNodes);
 
     return remainingTurtleLeafNodes;
   }
