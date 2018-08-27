@@ -1,7 +1,7 @@
 /node_modules/
 /db/
 /server/
-/index.js/
+index.js
 syncFrom.js
 syncTo.js
 tortoiseDB-logo-1.png
