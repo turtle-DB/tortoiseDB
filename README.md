@@ -47,6 +47,9 @@ const app = new TortoiseDB({
 
 // Start up server
 app.start();
+
+// Drop database
+app.dropDB();
 ```
 
 # Features
