@@ -1,6 +1,6 @@
 {
   "name": "tortoisedb",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "main": "dist/tortoiseDB.min.js",
   "license": "MIT",
   "description": "A simple Node server and mongoDB wrapper for clients to sync to when using turtleDB.",
